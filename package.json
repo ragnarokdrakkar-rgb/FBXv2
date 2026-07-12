@@ -1,6 +1,6 @@
 {
   "name": "fuzijska-biopsija-desktop",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Lokalna Windows aplikacija za evidenco, DICOM/PDF dokumente, množično naročanje, preverjen USB prenos in samodejne GitHub posodobitve.",
   "main": "src/main/main.cjs",
   "author": "Kemal Jazavac",
