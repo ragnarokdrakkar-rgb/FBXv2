@@ -1,0 +1,36 @@
+FUZJSKA BIOPSIJA – DESKTOP 1.4.0
+================================
+
+Ta verzija doda samodejne posodobitve prek GitHub Releases.
+
+POMEMBNO
+--------
+Verzija 1.3.0 se ne more sama posodobiti na 1.4.0, ker updaterja se nima.
+Setup 1.4.0 zato enkrat namesti rocno cez obstojeco verzijo.
+Od 1.4.0 naprej bodo prihodnje izdaje lahko prisle samodejno.
+
+HITRI KORAKI
+------------
+1. Zazeni 1-namesti.bat
+2. Zazeni 2-zazeni.bat in preveri obstojeco bazo
+3. Zazeni 4-nastavi-github-update.bat
+4. Vnesi JAVNI GitHub repozitorij v obliki UPORABNIK/REPO
+5. Zazeni 3-zgradi-exe.bat
+6. Namesti release\Fuzijska-biopsija-Setup-1.4.0.exe cez 1.3.0
+7. Projekt potisni na GitHub in ustvari tag v1.4.0
+8. Preberi docs\FAZA-5-GITHUB-POSODOBITVE.md
+
+Za pravi test nato objavi visjo verzijo, npr. 1.4.1 / tag v1.4.1.
+GitHub Release mora vsebovati:
+- Setup.exe
+- latest.yml
+- Setup.exe.blockmap
+
+Glavna lokalna baza ostane v:
+%LOCALAPPDATA%\FuzijskaBiopsija\data\fuzijska-biopsija.sqlite
+
+Kopije pred posodobitvami so v:
+%LOCALAPPDATA%\FuzijskaBiopsija\updates\database-backups
+
+DICOM in PDF ostanejo v izbrani glavni mapi dokumentov.
+Google Sheets se vedno prejme samo sifrirani seznam pacientov in ne dokumentov.

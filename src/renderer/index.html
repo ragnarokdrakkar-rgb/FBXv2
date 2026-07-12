@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuzijska biopsija</title>
+<meta name="description" content="Evidenca in naročanje pacientov za fuzijsko biopsijo prostate">
+<meta name="theme-color" content="#0B4F5C">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuzijska biopsija">
+<style>
+:root{
+  --globina:#0B4F5C; --tirkiz:#0E7490; --tirkiz-t:#0A5D74;
+  --platno:#F3F7F8; --karta:#FFFFFF; --tinta:#17272C; --siva:#5C7178;
+  --crta:#D9E4E7;
+  --zeleno:#1F7A45; --zeleno-bg:#E7F4EC;
+  --jantar:#B45309; --jantar-bg:#FCF0E1;
+  --alarm:#B3261E; --alarm-bg:#FBEBEA;
+  --modro-bg:#E8F1F4;
+  --radij:12px; --senca:0 1px 3px rgba(11,79,92,.10);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--platno);color:var(--tinta);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--tirkiz);outline-offset:2px}
+
+/* ── glava in zavihki ── */
+header{background:var(--globina);color:#fff;position:sticky;top:0;z-index:40}
+.glava-n{max-width:820px;margin:0 auto;padding:10px 14px 6px;display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;flex:none;color:#8FD3E0}
+h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.01em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{appearance:none;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;
+  border-radius:999px;padding:4px 10px;font-size:11.5px;letter-spacing:.02em;white-space:nowrap}
+.pill.klik{cursor:pointer}
+.pill.ok{border-color:rgba(134,239,172,.65)}
+.pill.pozor{background:var(--jantar);border-color:var(--jantar)}
+.zav-n{max-width:820px;margin:0 auto;display:flex;gap:6px;padding:6px 10px 10px;overflow-x:auto}
+.zav{border:0;background:rgba(255,255,255,.10);color:#DCEBEF;border-radius:999px;
+  padding:8px 14px;font-size:13.5px;font-weight:600;white-space:nowrap;display:flex;gap:7px;align-items:center}
+.zav.aktiven{background:#fff;color:var(--globina)}
+.zn{background:rgba(255,255,255,.22);border-radius:999px;font-size:11.5px;padding:1px 7px;font-weight:700;font-variant-numeric:tabular-nums}
+.zav.aktiven .zn{background:var(--modro-bg);color:var(--globina)}
+
+/* opozorilni trak za dovoljenje backupa */
+#trak{display:none;background:var(--jantar-bg);color:var(--jantar);border-bottom:1px solid #EAD3B6}
+#trak.odprt{display:block}
+.trak-n{max-width:820px;margin:0 auto;padding:9px 14px;display:flex;gap:10px;align-items:center;font-size:13.5px}
+
+main{max-width:820px;margin:0 auto;padding:14px 12px 90px}
+main>section{display:none}
+main>section.aktiven{display:block}
+
+/* orodna vrstica */
+.orodja{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.iskanje{flex:1;min-width:160px;border:1px solid var(--crta);border-radius:10px;padding:9px 12px;background:#fff}
+.iskanje:focus{outline:2px solid var(--tirkiz);outline-offset:1px;border-color:var(--tirkiz)}
+select.filter{border:1px solid var(--crta);border-radius:10px;padding:9px 10px;background:#fff;font-size:13.5px;max-width:180px}
+.povzetek{font-size:12.5px;color:var(--siva);margin:0 2px 10px;letter-spacing:.01em}
+.povzetek b{color:var(--tinta)}
+
+/* gumbi */
+.gumb{background:var(--tirkiz);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px}
+.gumb:hover{background:var(--tirkiz-t)}
+.gumb.drugi{background:#fff;color:var(--globina);border:1px solid var(--crta)}
+.gumb.drugi:hover{border-color:var(--tirkiz);color:var(--tirkiz);background:#fff}
+.gumb.nevaren{background:#fff;color:var(--alarm);border:1px solid var(--crta)}
+.gumb.nevaren:hover{border-color:var(--alarm);background:#fff}
+.gumb.mali{padding:7px 11px;font-size:13px;border-radius:9px}
+
+/* kartoni pacientov */
+.karton{background:var(--karta);border:1px solid var(--crta);border-left:6px solid var(--tirkiz);
+  border-radius:var(--radij);box-shadow:var(--senca);padding:12px 14px;margin-bottom:10px}
+.karton.ok{border-left-color:var(--zeleno)}
+.karton.zamuda{border-left-color:var(--alarm)}
+.karton.arhivsko{border-left-color:#9AACB2}
+.vrh{display:flex;gap:10px;align-items:flex-start}
+.vrh>div:first-child{min-width:0}
+.ime{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.meta{font-size:12.5px;color:var(--siva);margin-top:3px}
+.meta b{color:var(--tinta);font-weight:600}
+.rokvrsta{font-size:12.5px;margin-top:7px;color:var(--siva)}
+.rokvrsta b{font-variant-numeric:tabular-nums;color:var(--tinta)}
+.opomba{font-size:12.5px;color:var(--siva);font-style:italic;margin-top:8px;border-top:1px dashed var(--crta);padding-top:7px}
+
+/* števec čakanja */
+.rok{margin-left:auto;text-align:right;flex:none;min-width:78px}
+.rok .st{font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--globina)}
+.rok .oz{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--siva);margin-top:3px}
+
+.znacka{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border-radius:6px;padding:3px 7px;vertical-align:2px;margin-left:4px}
+.zn-opr{background:var(--zeleno-bg);color:var(--zeleno)}
+.zn-odp{background:#EEF1F2;color:var(--siva)}
+
+.akcije{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* naročeni: dnevne skupine */
+.dan{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--siva);
+  margin:18px 2px 8px;display:flex;gap:8px;align-items:center}
+#sezNar .dan:first-child{margin-top:2px}
+.danes{background:var(--globina);color:#fff;border-radius:6px;padding:2px 7px;letter-spacing:.06em;font-size:10.5px}
+.ura{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--globina);min-width:56px;flex:none;padding-top:1px}
+.mimo{color:var(--alarm);font-size:12.5px;font-weight:600;margin-top:7px}
+
+.prazno{border:1.5px dashed var(--crta);border-radius:var(--radij);padding:28px 16px;text-align:center;color:var(--siva);font-size:14px}
+
+/* nastavitve */
+.plosca{background:#fff;border:1px solid var(--crta);border-radius:var(--radij);box-shadow:var(--senca);padding:14px;margin-bottom:12px}
+.plosca h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--siva);margin:0 0 10px;font-weight:700}
+.vrstica{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.vrstica label{font-size:13.5px}
+.raste{flex:1}
+.st-vnos{width:120px;border:1px solid var(--crta);border-radius:8px;padding:7px 9px;font-variant-numeric:tabular-nums;background:#fff}
+.namig{font-size:12px;color:var(--siva);margin:8px 0 0;line-height:1.55}
+.namig b{color:var(--tinta)}
+.kopija{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid var(--crta);padding:8px 0;font-size:13px}
+.kopija:first-child{border-top:0;padding-top:0}
+.stanje{font-size:13px;padding:9px 11px;border-radius:8px;background:var(--modro-bg);margin-bottom:10px;line-height:1.45}
+.stanje.ok{background:var(--zeleno-bg)}
+.stanje.slabo{background:var(--jantar-bg)}
+.cloud-gesla{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.cloud-gesla input{border:1px solid var(--crta);border-radius:9px;padding:9px 10px;width:100%;background:#fff}
+.cloud-meta{font-size:12px;color:var(--siva);line-height:1.55;margin-top:8px}
+.cloud-meta b{color:var(--tinta)}
+.update-meta{font-size:12px;color:var(--siva);line-height:1.55;margin-top:8px}
+.update-meta b{color:var(--tinta)}
+.update-proga{height:10px;background:#DCE7EA;border-radius:999px;overflow:hidden;margin:8px 0 4px;display:none}
+.update-proga.vidna{display:block}
+.update-proga>span{display:block;width:0;height:100%;background:var(--tirkiz);transition:width .2s}
+@media(max-width:620px){.cloud-gesla{grid-template-columns:1fr}}
+
+/* modali */
+.zastor{position:fixed;inset:0;background:rgba(11,39,44,.45);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:18px 12px;overflow:auto}
+.zastor.odprt{display:flex}
+.okno{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:16px;margin-top:2vh;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.okno h2{margin:0 0 12px;font-size:17px;color:var(--globina)}
+.polja{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.polje{display:flex;flex-direction:column;gap:4px}
+.polje.sirok{grid-column:1/-1}
+.polje label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--siva);font-weight:700}
+.polje input,.polje select,.polje textarea{border:1px solid var(--crta);border-radius:9px;padding:9px 10px;width:100%;background:#fff}
+.polje input:focus,.polje select:focus,.polje textarea:focus{outline:2px solid var(--tirkiz);outline-offset:1px;border-color:var(--tirkiz)}
+.polje textarea{resize:vertical;min-height:64px}
+.okno .akcije{justify-content:flex-end;margin-top:14px}
+@media(max-width:520px){.polja{grid-template-columns:1fr}.rok{min-width:70px}.rok .st{font-size:21px}select.filter{max-width:150px}}
+
+/* PIN zaklep */
+#pinZastor{position:fixed;inset:0;background:var(--globina);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+#pinZastor.odprt{display:flex}
+.pinOkno{text-align:center;color:#fff;max-width:280px;width:100%}
+.pinOkno .logo{width:54px;height:54px;margin:0 auto 12px;color:#8FD3E0}
+.pinOkno h2{font-size:18px;margin:0 0 4px}
+.pinOkno p{font-size:13px;color:#BFD9E0;margin:0 0 16px}
+#pinVnos{width:100%;text-align:center;font-size:24px;letter-spacing:.35em;border:0;border-radius:12px;padding:12px;font-variant-numeric:tabular-nums}
+#pinNapaka{color:#FFC9C4;font-size:13px;min-height:18px;margin:8px 0}
+.pinOkno .gumb{width:100%;background:#fff;color:var(--globina);font-size:15px;padding:11px}
+.pinOkno .gumb:hover{background:#EAF4F6}
+
+/* statistika in urnik */
+.stat-mreza{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.stat-karta{background:#fff;border:1px solid var(--crta);border-radius:var(--radij);padding:13px;box-shadow:var(--senca)}
+.stat-stevilo{font-size:25px;line-height:1;font-weight:800;color:var(--globina);font-variant-numeric:tabular-nums}
+.stat-oznaka{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--siva);margin-top:7px;font-weight:700}
+.stat-podatek{font-size:12px;color:var(--siva);margin-top:4px}
+.stat-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.stat-filter label{font-size:12px;color:var(--siva);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.stat-filter input{border:1px solid var(--crta);border-radius:9px;padding:8px 10px;background:#fff}
+.graf-vrsta{display:grid;grid-template-columns:90px 1fr 38px;gap:9px;align-items:center;margin:9px 0;font-size:12.5px}
+.graf-ime{font-variant-numeric:tabular-nums;color:var(--siva)}
+.graf-proga{height:12px;background:#EDF2F3;border-radius:999px;overflow:hidden;display:flex}
+.graf-del{height:100%;min-width:0}
+.graf-opr{background:var(--zeleno)}
+.graf-odp{background:#9AACB2}
+.graf-nar{background:var(--tirkiz)}
+.graf-st{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.tabela-ovoj{overflow-x:auto}
+.stat-tabela{width:100%;border-collapse:collapse;font-size:13px}
+.stat-tabela th,.stat-tabela td{padding:9px 8px;border-bottom:1px solid var(--crta);text-align:right;font-variant-numeric:tabular-nums}
+.stat-tabela th:first-child,.stat-tabela td:first-child{text-align:left}
+.stat-tabela th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--siva)}
+.urnik-dodaj{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;align-items:end}
+.urnik-seznam{display:grid;gap:10px;margin-top:12px}
+.urnik-karta{border:1px solid var(--crta);border-radius:11px;background:#fff;padding:11px}
+.urnik-karta.pretekel{background:#F8FAFA;border-color:#E3EAEC}
+.urnik-glava{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.urnik-naslov{font-weight:800;color:var(--globina);font-size:15px}
+.urnik-podnaslov{font-size:11.5px;color:var(--siva);margin-top:2px}
+.urnik-kapaciteta{margin-left:auto;font-size:11.5px;color:var(--siva);font-variant-numeric:tabular-nums;text-align:right}
+.urnik-mreza{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.urnik-mreza .polje input{min-width:0}
+.urnik-casi{font-size:12px;color:var(--siva);margin-top:9px;line-height:1.55}
+.urnik-casi b{color:var(--tinta)}
+.urnik-karta .akcije{margin-top:10px}
+#terminProsti{margin:10px 0 0}
+#tUra option:disabled,#tDatum option:disabled{color:#9AACB2}
+@media(max-width:900px){.urnik-dodaj,.urnik-mreza{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.stat-mreza{grid-template-columns:repeat(2,1fr)}.urnik-dodaj,.urnik-mreza{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.stat-mreza{grid-template-columns:1fr}.urnik-dodaj,.urnik-mreza{grid-template-columns:1fr}}
+
+/* DICOM in MR dokumenti */
+.dok-status{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.dok-zn{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.03em;background:#EEF1F2;color:var(--siva)}
+.dok-zn.ok{background:var(--zeleno-bg);color:var(--zeleno)}
+.dok-zn.manjka{background:var(--jantar-bg);color:var(--jantar)}
+.dok-seznam{display:grid;gap:9px;margin-top:12px}
+.dok-karta{border:1px solid var(--crta);border-radius:10px;padding:11px;background:#fff}
+.dok-karta.stara{background:#F8FAFA;opacity:.82}
+.dok-glava{display:flex;gap:9px;align-items:flex-start}
+.dok-ikona{width:36px;height:36px;border-radius:9px;background:var(--modro-bg);display:grid;place-items:center;font-size:18px;flex:none}
+.dok-naslov{font-weight:750;color:var(--globina);overflow-wrap:anywhere}
+.dok-meta{font-size:12px;color:var(--siva);margin-top:3px;line-height:1.5}
+.dok-trenutno{display:inline-block;margin-left:6px;background:var(--zeleno-bg);color:var(--zeleno);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;border-radius:5px;padding:2px 5px;vertical-align:2px}
+.dok-napredek{margin:12px 0 0;display:none}
+.dok-napredek.viden{display:block}
+.dok-proga{height:10px;background:#E7EEF0;border-radius:999px;overflow:hidden;margin-top:7px}
+.dok-proga>span{display:block;height:100%;width:0;background:var(--tirkiz);transition:width .15s}
+.dok-pot{font-family:Consolas,"Courier New",monospace;font-size:11px;overflow-wrap:anywhere}
+#zastorDokumenti .okno{max-width:720px}
+#dokShrambaStanje .dok-pot{display:block;margin-top:4px}
+
+/* množično naročanje in prenos */
+.mnozicna-vrstica{display:none;align-items:center;gap:8px;flex-wrap:wrap;background:var(--modro-bg);border:1px solid #C7DDE3;border-radius:11px;padding:9px 11px;margin:-2px 0 12px}
+.mnozicna-vrstica.vidna{display:flex}
+.mnozicna-stevilo{font-weight:750;color:var(--globina);margin-right:auto}
+.izbor-pacienta{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--globina);background:var(--modro-bg);border-radius:8px;padding:5px 8px;margin-bottom:8px;cursor:pointer}
+.izbor-pacienta input{width:17px;height:17px;accent-color:var(--tirkiz)}
+.mnozicni-seznam{display:grid;gap:7px;margin-top:10px;max-height:420px;overflow:auto}
+.mnozicni-vrstica{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;border:1px solid var(--crta);border-radius:9px;padding:8px;background:#fff}
+.mnozicni-zap{font-size:18px;font-weight:800;color:var(--globina);text-align:center}
+.mnozicni-ime{font-weight:700}
+.mnozicni-meta{font-size:11.5px;color:var(--siva);margin-top:2px}
+.mnozicni-premik{display:flex;gap:5px}
+.mnozicni-premik button{padding:5px 8px}
+.dan-vrstica{display:flex;align-items:center;gap:8px;margin:18px 2px 8px}
+#sezNar .dan-vrstica:first-child{margin-top:2px}
+.dan-vrstica .dan{margin:0;flex:1}
+.dan-prenos-info{font-size:11px;color:var(--siva);white-space:nowrap}
+.izvoz-seznam{display:grid;gap:7px;max-height:320px;overflow:auto;margin-top:10px}
+.izvoz-pacient{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;border-bottom:1px solid var(--crta);padding:7px 2px}
+.izvoz-pacient:last-child{border-bottom:0}
+.izvoz-dok{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.izvoz-opozorilo{color:var(--jantar);font-weight:700}
+.izvoz-napredek{display:none;margin-top:12px}
+.izvoz-napredek.viden{display:block}
+.izvoz-proga{height:11px;background:#E7EEF0;border-radius:999px;overflow:hidden;margin-top:7px}
+.izvoz-proga>span{display:block;height:100%;width:0;background:var(--tirkiz);transition:width .15s}
+.izvoz-pot{font-family:Consolas,"Courier New",monospace;font-size:11px;overflow-wrap:anywhere;margin-top:6px}
+#zastorMnozicno .okno,#zastorIzvoz .okno{max-width:760px}
+@media(max-width:620px){.dan-vrstica{align-items:flex-start;flex-wrap:wrap}.dan-vrstica .gumb{width:100%}.mnozicni-vrstica,.izvoz-pacient{grid-template-columns:30px 1fr}.mnozicni-premik,.izvoz-dok{grid-column:2}}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--tinta);color:#fff;
+  padding:10px 16px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+#toast.viden{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+.desktop-only{display:none}
+body.namizno .desktop-only{display:block}
+body.namizno .mnozicna-vrstica{display:flex}
+body.namizno .web-backup{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="glava-n">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.6"><circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8"/><path d="M24 2.5v8M24 37.5v8M2.5 24h8M37.5 24h8" stroke-linecap="round"/></g><circle cx="24" cy="24" r="3" fill="currentColor"/></svg>
+    <h1>Fuzijska biopsija</h1>
+    <button class="pill klik desktop-only" id="pillUpdate" style="display:none">Posodobitev</button>
+    <button class="pill klik" id="gumbZakleni" style="display:none">Zakleni</button>
+    <button class="pill klik web-backup" id="pillBackup">Backup</button>
+  </div>
+  <div class="zav-n">
+    <button class="zav aktiven" data-tab="cakalni">Čakalni seznam <span class="zn" id="znCak">0</span></button>
+    <button class="zav" data-tab="naroceni">Naročeni <span class="zn" id="znNar">0</span></button>
+    <button class="zav" data-tab="arhiv">Arhiv</button>
+    <button class="zav" data-tab="statistika">Statistika</button>
+    <button class="zav" data-tab="nastavitve">Nastavitve</button>
+  </div>
+</header>
+
+<div id="trak" class="web-backup"><div class="trak-n">
+  <span class="raste">Samodejni backup v mapo čaka na tvoje dovoljenje.</span>
+  <button class="gumb mali" id="gumbTrak">Dovoli</button>
+</div></div>
+
+<main>
+
+<section id="tab-cakalni" class="aktiven">
+  <div class="orodja">
+    <input id="iskCak" class="iskanje" type="search" placeholder="Išči po imenu ali matičnem indeksu …">
+    <select id="filCak" class="filter" aria-label="Filter po ustanovi MR"></select>
+    <button class="gumb" id="gumbNov">+ Nov pacient</button>
+  </div>
+  <p class="povzetek" id="povzCak"></p>
+  <div id="mnozicnaVrstica" class="mnozicna-vrstica desktop-only">
+    <span id="mnozicnaStevilo" class="mnozicna-stevilo">Izbranih: 0</span>
+    <button class="gumb drugi mali" id="gumbIzberiVidne">Izberi prikazane</button>
+    <button class="gumb drugi mali" id="gumbPocistiIzbor">Počisti izbor</button>
+    <button class="gumb mali" id="gumbNarociIzbrane">Naroči izbrane</button>
+  </div>
+  <div id="sezCak"></div>
+</section>
+
+<section id="tab-naroceni">
+  <div class="orodja">
+    <input id="iskNar" class="iskanje" type="search" placeholder="Išči med naročenimi …">
+    <select id="filNar" class="filter" aria-label="Filter po ustanovi MR"></select>
+  </div>
+  <div id="sezNar"></div>
+</section>
+
+<section id="tab-arhiv">
+  <div class="orodja">
+    <input id="iskArh" class="iskanje" type="search" placeholder="Išči po arhivu …">
+    <select id="filArh" class="filter" aria-label="Filter po ustanovi MR"></select>
+  </div>
+  <div id="sezArh"></div>
+</section>
+
+<section id="tab-statistika">
+  <div class="stat-filter">
+    <label for="statOd">Od meseca</label>
+    <input id="statOd" type="month">
+    <label for="statDo">Do meseca</label>
+    <input id="statDo" type="month">
+  </div>
+  <div id="statKartice" class="stat-mreza"></div>
+  <div class="plosca">
+    <h2>Termini po mesecih</h2>
+    <p class="namig" style="margin:0 0 10px"><b>Legenda:</b> zeleno opravljeno · modro trenutno naročeno · sivo odpovedano</p>
+    <div id="statGraf"></div>
+  </div>
+  <div class="plosca">
+    <h2>Pregled obdobja</h2>
+    <div id="statTabela" class="tabela-ovoj"></div>
+    <p class="namig">Termini se štejejo po datumu termina. Pri starih zapisih brez termina se uporabi datum zaključka. Čakalna doba se izračuna od datuma vpisa do termina.</p>
+  </div>
+</section>
+
+<section id="tab-nastavitve">
+
+  <div class="plosca">
+    <h2>Dnevi fuzijskih biopsij</h2>
+    <p class="namig" style="margin:0 0 12px">Ko zdravnik določi termin, dodaj konkreten datum. Vsak mesec ima lahko en, dva ali poljubno število različnih dni. Posamezen pacient ima <b>40 minut</b>.</p>
+    <div class="urnik-dodaj">
+      <div class="polje"><label for="uDatum">Datum *</label><input id="uDatum" type="date"></div>
+      <div class="polje"><label for="uPacientov">Pacientov *</label><input id="uPacientov" type="number" min="1" step="1" value="5"></div>
+      <div class="polje"><label for="uZacetek">Začetek *</label><input id="uZacetek" type="time" value="08:00"></div>
+      <div class="polje"><label for="uKonec">Konec *</label><input id="uKonec" type="time" value="12:00"></div>
+      <div class="polje"><label for="uMalicaOd">Malica od</label><input id="uMalicaOd" type="time" value="09:20"></div>
+      <div class="polje"><label for="uMalicaDo">Malica do</label><input id="uMalicaDo" type="time" value="10:00"></div>
+    </div>
+    <div class="vrstica" style="margin-top:12px">
+      <button class="gumb" id="gumbDodajUrnik">+ Dodaj dan fuzij</button>
+    </div>
+    <div id="urnikPovzetek" class="stanje" style="margin:10px 0 0"></div>
+    <div id="urnikDnevi" class="urnik-seznam"></div>
+    <p class="namig">Za vsak datum lahko določiš drugačen čas, malico in število pacientov. Dneva z že naročenimi pacienti ni mogoče izbrisati ali spremeniti tako, da bi obstoječi termini postali neveljavni.</p>
+  </div>
+
+  <div class="plosca">
+    <h2>Ustanove MR preiskav</h2>
+    <div class="vrstica">
+      <input id="polUstanova" class="iskanje" placeholder="npr. UKC Ljubljana" autocomplete="off">
+      <button class="gumb drugi" id="gumbUstanova">Dodaj</button>
+    </div>
+    <div id="sezUstanov"></div>
+    <p class="namig">Ustanove se pokažejo v izbirniku »MR opravljen v« pri vnosu pacienta in v filtru nad seznami. Odstranitev s seznama ne izbriše podatka pri že vpisanih pacientih.</p>
+  </div>
+
+  <div class="plosca desktop-only" id="updatePlosca">
+    <h2>Posodobitve aplikacije</h2>
+    <div id="updateStanje" class="stanje">Preverjam stanje posodobitev …</div>
+    <div id="updateProga" class="update-proga"><span></span></div>
+    <div class="vrstica">
+      <button class="gumb drugi" id="gumbUpdatePreveri">Preveri posodobitve</button>
+      <button class="gumb drugi" id="gumbUpdatePrenesi">Prenesi posodobitev</button>
+      <button class="gumb" id="gumbUpdateNamesti">Znova zaženi in namesti</button>
+      <button class="gumb drugi" id="gumbUpdateKopije">Odpri varnostne kopije posodobitev</button>
+    </div>
+    <div id="updateMeta" class="update-meta"></div>
+    <p class="namig">Nameščeni EXE ob zagonu sam preveri GitHub Releases in novo različico prenese v ozadju. Namestitev se izvede šele po tvoji potrditvi. Pred ponovnim zagonom se ustvari preverjena kopija SQLite baze, DICOM in PDF dokumenti pa se ne spreminjajo.</p>
+  </div>
+
+  <div class="plosca desktop-only" id="desktopBazaPlosca">
+    <h2>Namizna podatkovna baza</h2>
+    <div id="desktopBazaStanje" class="stanje">Preverjam lokalno SQLite bazo …</div>
+    <div class="vrstica">
+      <button class="gumb drugi" id="gumbOdpriPodatke">Odpri mapo podatkov</button>
+      <button class="gumb drugi" id="gumbOdpriDnevnike">Odpri dnevnike napak</button>
+    </div>
+    <p class="namig">Glavna baza je lokalna SQLite datoteka, ločena od nameščenega programa. Ob običajni odstranitvi ali posodobitvi aplikacije podatki ostanejo na računalniku. Za prehod iz spletne verzije najprej tam izvozi JSON, nato ga tukaj uvozi.</p>
+  </div>
+
+
+  <div class="plosca desktop-only" id="dokShrambaPlosca">
+    <h2>DICOM in MR izvidi</h2>
+    <div id="dokShrambaStanje" class="stanje">Preverjam mapo dokumentov …</div>
+    <div class="vrstica">
+      <button class="gumb drugi" id="gumbDokIzberiMapo">Izberi glavno mapo</button>
+      <button class="gumb drugi" id="gumbDokOdpriMapo">Odpri mapo dokumentov</button>
+    </div>
+    <p class="namig">DICOM mapa se kopira v celoti z originalnimi imeni in podmapami. MR izvid se kopira kot PDF in samodejno smiselno poimenuje. Pred potrditvijo aplikacija preveri število in velikost kopiranih datotek. Sprememba glavne mape ne premakne že shranjenih dokumentov.</p>
+  </div>
+
+  <div class="plosca desktop-only" id="izvozZgodovinaPlosca">
+    <h2>Zadnji prenosi na USB ali v mapo</h2>
+    <div id="izvozZgodovina"><p class="namig" style="margin:0">Prenosa še ni bilo.</p></div>
+    <p class="namig">Vsak končan, preklican ali neuspešen prenos ostane zabeležen lokalno. Pacientske datoteke se v Google Sheets ne pošiljajo.</p>
+  </div>
+
+  <div class="plosca desktop-only" id="cloudPlosca">
+    <h2>Šifrirana Google Sheets kopija prek Apps Script</h2>
+    <div id="cloudStanje" class="stanje">Preverjam Apps Script povezavo …</div>
+    <div class="polje sirok" style="margin-bottom:10px">
+      <label for="cloudUrl">Apps Script Web App URL</label>
+      <input id="cloudUrl" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="polje sirok" style="margin-bottom:10px">
+      <label for="cloudDostopniKljuc">Dostopni ključ iz Apps Scripta</label>
+      <input id="cloudDostopniKljuc" type="password" autocomplete="off" placeholder="64-mestni dostopni ključ">
+    </div>
+    <div class="vrstica">
+      <button class="gumb" id="gumbCloudNastavi">1. Shrani in preveri povezavo</button>
+      <button class="gumb drugi" id="gumbCloudOsvezi">Preveri povezavo / backup</button>
+    </div>
+    <div class="cloud-gesla">
+      <div class="polje"><label for="cloudGeslo">Obnovitveno geslo</label><input id="cloudGeslo" type="password" autocomplete="new-password" placeholder="Najmanj 12 znakov"></div>
+      <div class="polje"><label for="cloudGeslo2">Ponovi geslo</label><input id="cloudGeslo2" type="password" autocomplete="new-password" placeholder="Geslo shrani izven računalnika"></div>
+    </div>
+    <div class="vrstica">
+      <button class="gumb" id="gumbCloudUstvari">2A. Ustvari nov šifrirani backup</button>
+      <button class="gumb drugi" id="gumbCloudPriklopi">2B. Poveži obstoječi backup</button>
+    </div>
+    <div class="vrstica" style="margin-top:10px">
+      <button class="gumb drugi" id="gumbCloudSync">Sinhroniziraj zdaj</button>
+      <button class="gumb drugi" id="gumbCloudObnovi">Obnovi lokalno bazo iz clouda</button>
+      <button class="gumb drugi" id="gumbCloudOdpri">Odpri Google Sheet</button>
+      <button class="gumb nevaren" id="gumbCloudOdklopi">Odklopi Apps Script</button>
+    </div>
+    <div id="cloudMeta" class="cloud-meta"></div>
+    <p class="namig"><b>Google Cloud Console in plačljiv API nista potrebna.</b> EXE seznam lokalno stisne in šifrira z AES-256-GCM. Apps Script prejme samo šifrirane bloke in podpisane ukaze; obnovitveno geslo ter šifrirni ključ se nikoli ne pošljeta Googlu.</p>
+  </div>
+
+  <div class="plosca web-backup">
+    <h2>Samodejna varnostna kopija</h2>
+    <div id="stanjeMape" class="stanje">Preverjam …</div>
+    <div class="vrstica">
+      <button class="gumb drugi" id="gumbMapa">Izberi mapo</button>
+      <button class="gumb drugi" id="gumbZapisi">Zapiši v mapo zdaj</button>
+      <button class="gumb drugi" id="gumbPreveri">Preveri backup</button>
+    </div>
+    <div class="vrstica" style="margin-top:6px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13.5px">
+        <input type="checkbox" id="kljDnevni"> Vsak dan samodejno prenesi kopijo JSON (mapa Prenosi)
+      </label>
+    </div>
+    <p class="namig" id="namigPrenos"></p>
+    <p class="namig">Ob vsaki spremembi se zapišejo <b>zadnji.json</b>, izmenični kopiji <b>backup-A/B.json</b> in enkrat dnevno še datirana kopija. Gumb »Preveri backup« datoteko ponovno prebere in primerja s trenutno bazo. Izbiro mape podpirata Chrome in Edge.</p>
+  </div>
+
+  <div class="plosca">
+    <h2>Izvoz in uvoz</h2>
+    <div class="vrstica">
+      <button class="gumb drugi" id="gumbJson">Izvozi JSON</button>
+      <button class="gumb drugi" id="gumbCsv">Izvozi CSV (Excel)</button>
+      <button class="gumb drugi" id="gumbUvoz">Uvozi JSON</button>
+      <input type="file" id="dtUvoz" accept=".json,application/json" hidden>
+    </div>
+    <p class="namig">Uvoz najprej preveri celotno datoteko. Pred zamenjavo se samodejno prenese ločena kopija trenutnega stanja in ustvari notranja kopija.</p>
+  </div>
+
+  <div class="plosca">
+    <h2>Notranje kopije (zadnjih 10 sprememb)</h2>
+    <div id="sezKopij"></div>
+  </div>
+
+  <div class="plosca">
+    <h2>PIN zaklep</h2>
+    <div class="vrstica">
+      <input id="pinNov" class="st-vnos" inputmode="numeric" maxlength="8" placeholder="4–8 številk" autocomplete="off">
+      <button class="gumb drugi" id="gumbPinNastavi">Nastavi PIN</button>
+      <button class="gumb nevaren" id="gumbPinOdstrani">Odstrani PIN</button>
+    </div>
+    <p class="namig">PIN zaklene pogled ob odprtju aplikacije. Podatki na napravi niso šifrirani — napravo zaščiti tudi s sistemskim geslom.</p>
+  </div>
+
+  <div class="plosca">
+    <h2>O aplikaciji</h2>
+    <p class="namig" style="margin:0">Fuzijska biopsija <b id="appRazlicica">—</b> — namizna evidenca in naročanje pacientov. Glavni podatki so shranjeni v lokalni SQLite bazi, DICOM mape in MR PDF-izvidi pa v ločeni izbrani mapi na disku. Če vključiš Google Sheets kopijo prek Apps Scripta, se na splet pošlje samo lokalno šifriran posnetek baze. Program in podatkovna baza sta ločena, zato običajna posodobitev ali odstranitev programa ne izbriše seznama pacientov.</p>
+  </div>
+
+</section>
+</main>
+
+<!-- obrazec pacienta -->
+<div class="zastor" id="zastorPacient">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasPacient">
+    <h2 id="nasPacient">Nov pacient</h2>
+    <div class="polja">
+      <div class="polje"><label for="fIme">Ime *</label><input id="fIme" autocomplete="off"></div>
+      <div class="polje"><label for="fPriimek">Priimek *</label><input id="fPriimek" autocomplete="off"></div>
+      <div class="polje"><label for="fRojstvo">Datum rojstva</label><input id="fRojstvo" type="date"></div>
+      <div class="polje"><label for="fIndeks">Matični indeks *</label><input id="fIndeks" autocomplete="off"></div>
+      <div class="polje"><label for="fTelefon">Telefon</label><input id="fTelefon" type="tel" autocomplete="off"></div>
+      <div class="polje"><label for="fUstanova">MR opravljen v</label>
+        <select id="fUstanova"><option value="">— ni podatka —</option></select>
+      </div>
+      <div class="polje"><label for="fVpis">Datum vpisa</label><input id="fVpis" type="date"></div>
+      <div class="polje sirok"><label for="fOpombe">Opombe</label><textarea id="fOpombe" placeholder="npr. antikoagulantna terapija, PSA, PI-RADS …"></textarea></div>
+    </div>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbPacPreklic">Prekliči</button>
+      <button class="gumb" id="gumbPacShrani">Shrani pacienta</button>
+    </div>
+  </div>
+</div>
+
+<!-- obrazec termina -->
+<div class="zastor" id="zastorTermin">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasTermin">
+    <h2 id="nasTermin">Naroči pacienta</h2>
+    <p class="namig" id="terminOseba" style="margin:0 0 12px"></p>
+    <div class="polja">
+      <div class="polje"><label for="tDatum">Razpisani datum *</label><select id="tDatum"></select></div>
+      <div class="polje"><label for="tUra">Prosta ura *</label><select id="tUra"></select></div>
+      <div class="polje sirok"><div id="terminProsti" class="stanje"></div></div>
+    </div>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbPrviProsti">Najdi prvi prosti termin</button>
+      <button class="gumb drugi" id="gumbTerPreklic">Prekliči</button>
+      <button class="gumb" id="gumbTerShrani">Potrdi termin</button>
+    </div>
+  </div>
+</div>
+
+<!-- dokumenti pacienta -->
+<div class="zastor" id="zastorDokumenti">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasDokumenti">
+    <h2 id="nasDokumenti">Dokumenti pacienta</h2>
+    <p class="namig" id="dokOseba" style="margin:0 0 10px"></p>
+    <div class="vrstica">
+      <button class="gumb" id="gumbDodajDicom">Dodaj / zamenjaj DICOM mapo</button>
+      <button class="gumb drugi" id="gumbDodajPdf">Dodaj / zamenjaj MR izvid PDF</button>
+      <button class="gumb drugi" id="gumbOdpriPacMapo">Odpri pacientovo mapo</button>
+    </div>
+    <div id="dokNapredek" class="stanje dok-napredek">
+      <div id="dokNapredekBesedilo">Pripravljam …</div>
+      <div class="dok-proga"><span id="dokNapredekProga"></span></div>
+      <div id="dokNapredekMeta" class="namig" style="margin-top:5px"></div>
+    </div>
+    <div id="dokSeznam" class="dok-seznam"></div>
+    <p class="namig">Nova DICOM mapa ali PDF postane trenutna različica. Prejšnja različica ostane shranjena, dokler je ročno ne izbrišeš.</p>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbDokZapri">Zapri</button>
+    </div>
+  </div>
+</div>
+
+<!-- množično naročanje -->
+<div class="zastor" id="zastorMnozicno">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasMnozicno">
+    <h2 id="nasMnozicno">Naroči izbrane paciente</h2>
+    <div class="polje sirok"><label for="mnDatum">Dan fuzijskih biopsij</label><select id="mnDatum"></select></div>
+    <div id="mnPovzetek" class="stanje" style="margin-top:10px"></div>
+    <p class="namig" style="margin:0">Pacienti bodo dodeljeni prostim 40-minutnim terminom po spodnjem vrstnem redu. Vrstni red lahko spremeniš s puščicama.</p>
+    <div id="mnSeznam" class="mnozicni-seznam"></div>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbMnPreklic">Prekliči</button>
+      <button class="gumb" id="gumbMnPotrdi">Naroči vse izbrane</button>
+    </div>
+  </div>
+</div>
+
+<!-- prenos DICOM in PDF za izbrani dan -->
+<div class="zastor" id="zastorIzvoz">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasIzvoz">
+    <h2 id="nasIzvoz">Pripravi prenos</h2>
+    <div id="izvozStanje" class="stanje">Pripravljam pregled …</div>
+    <div id="izvozSeznam" class="izvoz-seznam"></div>
+    <label id="izvozDovoliOvoj" style="display:none;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px">
+      <input type="checkbox" id="izvozDovoliManjkajoce" style="margin-top:3px">
+      <span>Nadaljuj tudi, če nekaterim pacientom manjka DICOM ali MR izvid. Preneseni bodo vsi dosegljivi dokumenti.</span>
+    </label>
+    <div id="izvozNapredek" class="izvoz-napredek">
+      <div id="izvozNapredekBesedilo" class="namig" style="margin:0">Pripravljam …</div>
+      <div class="izvoz-proga"><span id="izvozNapredekProga"></span></div>
+    </div>
+    <div id="izvozRezultat" class="stanje ok" style="display:none;margin-top:12px"></div>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbIzvozZapri">Zapri</button>
+      <button class="gumb nevaren" id="gumbIzvozPreklici" style="display:none">Prekliči prenos</button>
+      <button class="gumb drugi" id="gumbIzvozOdpri" style="display:none">Odpri ciljno mapo</button>
+      <button class="gumb" id="gumbIzvozZacni">Izberi USB/mapo in prenesi</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN zaklep -->
+<div id="pinZastor">
+  <div class="pinOkno">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.6"><circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8"/><path d="M24 2.5v8M24 37.5v8M2.5 24h8M37.5 24h8" stroke-linecap="round"/></g><circle cx="24" cy="24" r="3" fill="currentColor"/></svg>
+    <h2>Fuzijska biopsija</h2>
+    <p>Vnesi PIN za odklep</p>
+    <input id="pinVnos" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN">
+    <div id="pinNapaka"></div>
+    <button class="gumb" id="gumbOdkleni">Odkleni</button>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+/* ═══ 1 · Pomožne funkcije ═══ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAN = 86400000;
+const DNEVI = ['nedelja','ponedeljek','torek','sreda','četrtek','petek','sobota'];
+const STAT = {cakalni:'Čakalni seznam', narocen:'Naročen', opravljeno:'Opravljeno', odpovedan:'Odpovedan'};
+const DOVOLJENI_STATUSI = Object.keys(STAT);
+function danes(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function toISO(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function jeISO(s){
+  if(typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y,m,d] = s.split('-').map(Number);
+  const x = new Date(y, m-1, d);
+  return x.getFullYear() === y && x.getMonth() === m-1 && x.getDate() === d;
+}
+function izISO(s){
+  if(!jeISO(s)) return null;
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtD(iso){
+  if(!jeISO(iso)) return '—';
+  const [y,m,d] = iso.split('-');
+  return (+d) + '. ' + (+m) + '. ' + y;
+}
+function fmtCSVDate(iso){
+  if(!jeISO(iso)) return '';
+  const [y,m,d] = iso.split('-');
+  return d + '.' + m + '.' + y;
+}
+function fmtCas(iso){
+  if(!iso) return 'še nikoli';
+  const d = new Date(iso);
+  if(Number.isNaN(d.getTime())) return 'neznano';
+  return d.toLocaleString('sl-SI', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+function oznakaCasa(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '-' +
+    String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + String(d.getSeconds()).padStart(2,'0');
+}
+function uid(){
+  if(globalThis.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function toast(b){
+  const t = $('#toast'); t.textContent = b; t.classList.add('viden');
+  clearTimeout(toast._c); toast._c = setTimeout(() => t.classList.remove('viden'), 3000);
+}
+function cakaDni(p){
+  const d = izISO(p.datumVpisa);
+  return d ? Math.max(0, Math.round((danes() - d) / DAN)) : 0;
+}
+function dnBes(n){ return n === 1 ? 'dan' : 'dni'; }
+function sklon(n){ n = n % 100; return n === 1 ? 'pacient' : n === 2 ? 'pacienta' : (n === 3 || n === 4) ? 'pacienti' : 'pacientov'; }
+function varnoBesedilo(v, max=10000){ return String(v == null ? '' : v).trim().slice(0, max); }
+function veljavnaUra(v){ return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v); }
+function uraVMinute(v){ if(!veljavnaUra(v)) return NaN; const [h,m] = v.split(':').map(Number); return h * 60 + m; }
+function minuteVUro(n){ return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); }
+const IMENA_DNI = ['Nedelja','Ponedeljek','Torek','Sreda','Četrtek','Petek','Sobota'];
+const PRIVZETI_TERMIN_FUZIJ = {zacetek:'08:00', konec:'12:00', pacientov:5, malicaOd:'09:20', malicaDo:'10:00'};
+function suroviTerminiZaPravilo(pravilo){
+  if(!pravilo || !veljavnaUra(pravilo.zacetek) || !veljavnaUra(pravilo.konec)) return [];
+  const konec = uraVMinute(pravilo.konec), interval = 40;
+  const mOd = pravilo.malicaOd ? uraVMinute(pravilo.malicaOd) : NaN;
+  const mDo = pravilo.malicaDo ? uraVMinute(pravilo.malicaDo) : NaN;
+  let trenutni = uraVMinute(pravilo.zacetek), rezultat = [], varovalo = 0;
+  while(trenutni + interval <= konec && varovalo++ < 100){
+    if(Number.isFinite(mOd) && trenutni < mDo && trenutni + interval > mOd){ trenutni = mDo; continue; }
+    rezultat.push(minuteVUro(trenutni));
+    trenutni += interval;
+  }
+  return rezultat;
+}
+function normalizirajTerminFuzij(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  if(!jeISO(raw.datum)) return null;
+  let zacetek = veljavnaUra(raw.zacetek) ? raw.zacetek : PRIVZETI_TERMIN_FUZIJ.zacetek;
+  let konec = veljavnaUra(raw.konec) ? raw.konec : PRIVZETI_TERMIN_FUZIJ.konec;
+  if(uraVMinute(konec) <= uraVMinute(zacetek)){ zacetek = PRIVZETI_TERMIN_FUZIJ.zacetek; konec = PRIVZETI_TERMIN_FUZIJ.konec; }
+  const imaMalicoOd = Object.prototype.hasOwnProperty.call(raw, 'malicaOd');
+  const imaMalicoDo = Object.prototype.hasOwnProperty.call(raw, 'malicaDo');
+  let malicaOd = imaMalicoOd ? (veljavnaUra(raw.malicaOd) ? raw.malicaOd : '') : PRIVZETI_TERMIN_FUZIJ.malicaOd;
+  let malicaDo = imaMalicoDo ? (veljavnaUra(raw.malicaDo) ? raw.malicaDo : '') : PRIVZETI_TERMIN_FUZIJ.malicaDo;
+  if(!malicaOd || !malicaDo || uraVMinute(malicaDo) <= uraVMinute(malicaOd) || uraVMinute(malicaOd) < uraVMinute(zacetek) || uraVMinute(malicaDo) > uraVMinute(konec)){
+    malicaOd = ''; malicaDo = '';
+  }
+  const osnova = {id:varnoBesedilo(raw.id, 100) || uid(), datum:raw.datum, zacetek, konec, pacientov:1, malicaOd, malicaDo};
+  const max = Math.max(1, suroviTerminiZaPravilo(osnova).length);
+  let pacientov = Number(raw.pacientov);
+  if(!Number.isInteger(pacientov) || pacientov < 1) pacientov = Math.min(PRIVZETI_TERMIN_FUZIJ.pacientov, max);
+  osnova.pacientov = Math.min(pacientov, max);
+  return osnova;
+}
+function normalizirajUrnik(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  const vir = Array.isArray(raw.termini) ? raw.termini : (Array.isArray(raw.seje) ? raw.seje : []);
+  const uporabljeniDatumi = new Set(), uporabljeniId = new Set(), termini = [];
+  for(const zapis of vir){
+    const t = normalizirajTerminFuzij(zapis);
+    if(!t || uporabljeniDatumi.has(t.datum)) continue;
+    while(uporabljeniId.has(t.id)) t.id = uid();
+    uporabljeniDatumi.add(t.datum); uporabljeniId.add(t.id); termini.push(t);
+  }
+  termini.sort((a,b) => a.datum.localeCompare(b.datum));
+  return {interval:40, termini};
+}
+function urnikZaDatum(iso){
+  return nastavitve.urnik.termini.find(x => x.datum === iso) || null;
+}
+function terminiZaDatum(iso){
+  const pravilo = urnikZaDatum(iso);
+  return pravilo ? suroviTerminiZaPravilo(pravilo).slice(0, pravilo.pacientov) : [];
+}
+function terminZaseden(datum, ura, izkljuciId){
+  return pacienti.some(p => p.id !== izkljuciId && p.status !== 'odpovedan' && p.terminDatum === datum && p.terminUra === ura);
+}
+function rezerviraniZaDatum(datum){
+  return pacienti.filter(p => p.status !== 'odpovedan' && p.terminDatum === datum && veljavnaUra(p.terminUra));
+}
+function prostihZaDatum(datum, izkljuciId){
+  return terminiZaDatum(datum).filter(ura => !terminZaseden(datum, ura, izkljuciId)).length;
+}
+function prviProstiTermin(odISO, izkljuciId){
+  const od = jeISO(odISO) ? odISO : toISO(danes());
+  const kandidati = nastavitve.urnik.termini.slice().sort((a,b) => a.datum.localeCompare(b.datum));
+  for(const seja of kandidati){
+    if(seja.datum < od) continue;
+    const ura = terminiZaDatum(seja.datum).find(x => !terminZaseden(seja.datum, x, izkljuciId));
+    if(ura) return {datum:seja.datum, ura};
+  }
+  return null;
+}
+
+function normalizirajPacienta(raw, indeks, ids, strog){
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)){
+    if(strog) throw new Error('Zapis ' + (indeks + 1) + ' ni veljaven objekt.');
+    raw = {};
+  }
+  const ime = varnoBesedilo(raw.ime, 120);
+  const priimek = varnoBesedilo(raw.priimek, 120);
+  const maticniIndeks = varnoBesedilo(raw.maticniIndeks, 120);
+  if(strog && (!ime || !priimek || !maticniIndeks)){
+    throw new Error('Zapis ' + (indeks + 1) + ' nima imena, priimka ali matičnega indeksa.');
+  }
+  let status = varnoBesedilo(raw.status, 30);
+  if(!DOVOLJENI_STATUSI.includes(status)){
+    if(strog) throw new Error('Zapis ' + (indeks + 1) + ' ima neveljaven status.');
+    status = 'cakalni';
+  }
+  const preveriDatum = (v, naziv, obvezen=false) => {
+    const x = varnoBesedilo(v, 10);
+    if(!x && !obvezen) return '';
+    if(!jeISO(x)){
+      if(strog) throw new Error('Zapis ' + (indeks + 1) + ' ima neveljaven datum: ' + naziv + '.');
+      return '';
+    }
+    return x;
+  };
+  const datumVpisa = preveriDatum(raw.datumVpisa, 'datum vpisa', strog) || toISO(danes());
+  const datumRojstva = preveriDatum(raw.datumRojstva, 'datum rojstva');
+  const terminDatum = preveriDatum(raw.terminDatum, 'datum termina');
+  const datumZakljucka = preveriDatum(raw.datumZakljucka, 'datum zaključka');
+  const terminUra = varnoBesedilo(raw.terminUra, 5);
+  if(strog && terminUra && !veljavnaUra(terminUra)) throw new Error('Zapis ' + (indeks + 1) + ' ima neveljavno uro termina.');
+  if(strog && status === 'narocen' && (!terminDatum || !veljavnaUra(terminUra))){
+    throw new Error('Naročeni zapis ' + (indeks + 1) + ' nima veljavnega datuma in ure termina.');
+  }
+  let id = varnoBesedilo(raw.id, 100);
+  if(!/^[A-Za-z0-9_-]{6,100}$/.test(id) || ids.has(id)) id = uid();
+  ids.add(id);
+  const p = {
+    id, status, ime, priimek, maticniIndeks,
+    datumRojstva,
+    telefon: varnoBesedilo(raw.telefon, 80),
+    mrUstanova: varnoBesedilo(raw.mrUstanova, 200),
+    datumVpisa,
+    opombe: varnoBesedilo(raw.opombe, 10000)
+  };
+  if(terminDatum) p.terminDatum = terminDatum;
+  if(veljavnaUra(terminUra)) p.terminUra = terminUra;
+  if(datumZakljucka) p.datumZakljucka = datumZakljucka;
+  return p;
+}
+function preveriSeznam(sez, strog=true){
+  if(!Array.isArray(sez)) throw new Error('Datoteka ne vsebuje seznama pacientov.');
+  const ids = new Set();
+  return sez.map((p, i) => normalizirajPacienta(p, i, ids, strog));
+}
+
+/* ═══ 2 · Podatki in shranjevanje ═══ */
+const LS_P = 'fb_pacienti', LS_N = 'fb_nastavitve', LS_K = 'fb_kopije', LS_R = 'fb_revizija';
+const JE_NAMIZNA = !!(window.desktopApi && window.desktopApi.isDesktop);
+let pacienti = [];
+let revizija = 0;
+let notranjeKopije = [];
+let nastavitve = {
+  ustanove: [], pin:'', dnevniPrenos:true, zadnjiPrenos:'', zadnjiZapisMape:'',
+  zadnjiUspesenBackup:'', backupReza:'A', urnik:normalizirajUrnik(null)
+};
+let cloudStanjePodatki = null;
+let cloudAkcijaPoteka = false;
+let updateStanjePodatki = null;
+let updateAkcijaPoteka = false;
+let updatePrenosSporocen = false;
+let dokumentiPovzetek = {};
+let dokumentiPacientId = null;
+let dokumentiAkcijaPoteka = false;
+let dokumentiShramba = null;
+let izbraniPacienti = new Set();
+let mnozicniVrstniRed = [];
+let izvozDatum = '';
+let izvozPriprava = null;
+let izvozPoteka = false;
+let izvozCiljnaMapa = '';
+
+function napakaNamiznegaOdgovora(odgovor, privzeto){
+  const e = odgovor && odgovor.error ? odgovor.error : null;
+  const napaka = new Error(e && e.message ? e.message : privzeto);
+  napaka.code = e && e.code ? e.code : 'APP_ERROR';
+  napaka.currentRevision = e && e.currentRevision;
+  return napaka;
+}
+
+function nalozi(){
+  if(JE_NAMIZNA){
+    try{
+      const odgovor = window.desktopApi.loadState();
+      if(!odgovor || !odgovor.ok) throw napakaNamiznegaOdgovora(odgovor, 'Lokalne baze ni bilo mogoče prebrati.');
+      const stanje = odgovor.result || {};
+      pacienti = preveriSeznam(Array.isArray(stanje.patients) ? stanje.patients : [], false);
+      nastavitve = Object.assign({}, nastavitve, stanje.settings || {});
+      notranjeKopije = Array.isArray(stanje.backups) ? stanje.backups : [];
+      revizija = Number(stanje.revision || 0);
+      try{
+        const dokOdgovor = window.desktopApi.documentsGetSummary();
+        dokumentiPovzetek = dokOdgovor && dokOdgovor.ok && dokOdgovor.result ? dokOdgovor.result : {};
+      }catch(_){ dokumentiPovzetek = {}; }
+    }catch(e){
+      console.error('Napaka pri nalaganju namizne baze:', e);
+      pacienti = [];
+      alert('Lokalne SQLite baze ni bilo mogoče prebrati. Podatki niso bili prepisani.\n\n' + (e.message || 'Neznana napaka.'));
+    }
+  }else{
+    try{
+      const raw = JSON.parse(localStorage.getItem(LS_P) || '[]');
+      pacienti = preveriSeznam(Array.isArray(raw) ? raw : [], false);
+    }catch(e){
+      console.error('Napaka pri nalaganju baze:', e);
+      pacienti = [];
+      alert('Shranjene baze ni bilo mogoče prebrati. Podatki niso bili prepisani; poskusi obnoviti JSON kopijo.');
+    }
+    try{
+      const n = JSON.parse(localStorage.getItem(LS_N) || '{}');
+      nastavitve = Object.assign({}, nastavitve, n);
+    }catch(e){ console.error('Napaka pri nalaganju nastavitev:', e); }
+    revizija = Number(localStorage.getItem(LS_R) || 0);
+  }
+  if(!Array.isArray(nastavitve.ustanove)) nastavitve.ustanove = [];
+  if(!['A','B'].includes(nastavitve.backupReza)) nastavitve.backupReza = 'A';
+  nastavitve.urnik = normalizirajUrnik(nastavitve.urnik);
+}
+function jeQuotaNapaka(e){ return e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014); }
+function shraniNastavitve(tiho=false){
+  if(JE_NAMIZNA){
+    try{
+      const odgovor = window.desktopApi.saveSettings({settings:nastavitve, expectedRevision:revizija});
+      if(!odgovor || !odgovor.ok) throw napakaNamiznegaOdgovora(odgovor, 'Nastavitev ni bilo mogoče shraniti.');
+      revizija = Number(odgovor.result.revision || revizija);
+      notranjeKopije = Array.isArray(odgovor.result.backups) ? odgovor.result.backups : notranjeKopije;
+      return true;
+    }catch(e){
+      console.error('Napaka pri shranjevanju nastavitev v SQLite:', e);
+      if(e.code === 'REVISION_CONFLICT') nalozi();
+      if(!tiho) alert('Nastavitev ni bilo mogoče shraniti.\n\n' + (e.message || 'Neznana napaka.'));
+      return false;
+    }
+  }
+  try{
+    localStorage.setItem(LS_N, JSON.stringify(nastavitve));
+    return true;
+  }catch(e){
+    console.error('Napaka pri shranjevanju nastavitev:', e);
+    if(!tiho) alert('Nastavitev ni bilo mogoče shraniti. Preveri prostor in dovoljenja brskalnika.');
+    return false;
+  }
+}
+function kopije(){
+  if(JE_NAMIZNA){
+    try{
+      const odgovor = window.desktopApi.getBackups();
+      if(odgovor && odgovor.ok && Array.isArray(odgovor.result)) notranjeKopije = odgovor.result;
+    }catch(e){ console.warn('Notranjih kopij ni bilo mogoče prebrati:', e); }
+    return notranjeKopije;
+  }
+  try{
+    const k = JSON.parse(localStorage.getItem(LS_K) || '[]');
+    return Array.isArray(k) ? k : [];
+  }catch(e){ return []; }
+}
+function shraniKopije(k){
+  if(JE_NAMIZNA){ notranjeKopije = Array.isArray(k) ? k.slice(0,10) : []; return true; }
+  try{
+    localStorage.setItem(LS_K, JSON.stringify(k.slice(0, 10)));
+    return true;
+  }catch(e){
+    console.warn('Notranje kopije ni bilo mogoče shraniti:', e);
+    return false;
+  }
+}
+function shrani(opis){
+  if(JE_NAMIZNA){
+    try{
+      const odgovor = window.desktopApi.saveState({
+        patients:pacienti,
+        settings:nastavitve,
+        description:opis || 'sprememba',
+        expectedRevision:revizija
+      });
+      if(!odgovor || !odgovor.ok) throw napakaNamiznegaOdgovora(odgovor, 'Podatkov ni bilo mogoče shraniti.');
+      revizija = Number(odgovor.result.revision || revizija);
+      notranjeKopije = Array.isArray(odgovor.result.backups) ? odgovor.result.backups : notranjeKopije;
+      renderVse();
+      osveziNamiznoBazo();
+      return true;
+    }catch(e){
+      console.error('Glavne SQLite baze ni mogoče shraniti:', e);
+      if(e.code === 'REVISION_CONFLICT'){
+        alert('Podatki so bili medtem spremenjeni. Seznam bo osvežen, zadnje dejanje pa ni bilo shranjeno.');
+        nalozi();
+        renderVse();
+      }else{
+        alert('PODATKI NISO BILI SHRANJENI.\n\n' + (e.message || 'Neznana napaka.') + '\n\nOdpri mapo podatkov v Nastavitvah in ohrani datoteko baze.');
+        nalozi();
+        renderVse();
+      }
+      return false;
+    }
+  }
+
+  const prej = localStorage.getItem(LS_P) || '[]';
+  const nova = JSON.stringify(pacienti);
+  const revVBrskalniku = Number(localStorage.getItem(LS_R) || 0);
+  if(revVBrskalniku !== revizija){
+    alert('Podatki so bili medtem spremenjeni v drugem zavihku. Seznam bo osvežen, tvoje zadnje dejanje pa ni bilo shranjeno.');
+    nalozi();
+    renderVse();
+    return false;
+  }
+  try{
+    localStorage.setItem(LS_P, nova);
+  }catch(e){
+    if(jeQuotaNapaka(e)){
+      try{
+        localStorage.removeItem(LS_K);
+        localStorage.setItem(LS_P, nova);
+        toast('Prostor je bil poln; stare notranje kopije so odstranjene, trenutna baza pa je shranjena.');
+      }catch(e2){
+        console.error('Glavne baze ni mogoče shraniti:', e2);
+        try{ pacienti = preveriSeznam(JSON.parse(prej), false); }catch(_){ pacienti = []; }
+        renderVse();
+        alert('PODATKI NISO BILI SHRANJENI. Takoj izvozi JSON in preveri prostor oziroma nastavitve brskalnika.');
+        return false;
+      }
+    }else{
+      console.error('Glavne baze ni mogoče shraniti:', e);
+      try{ pacienti = preveriSeznam(JSON.parse(prej), false); }catch(_){ pacienti = []; }
+      renderVse();
+      alert('PODATKI NISO BILI SHRANJENI. Takoj izvozi JSON in preveri nastavitve brskalnika.');
+      return false;
+    }
+  }
+  revizija = Date.now();
+  try{ localStorage.setItem(LS_R, String(revizija)); }catch(e){ console.warn('Revizije ni bilo mogoče zapisati:', e); }
+  if(prej !== nova && prej !== '[]'){
+    const k = kopije();
+    k.unshift({cas: new Date().toISOString(), opis: opis || 'sprememba', podatki: prej});
+    shraniKopije(k);
+  }
+  shraniNastavitve(true);
+  planirajZapis();
+  renderVse();
+  return true;
+}
+
+/* ═══ 3 · Ustanove MR ═══ */
+function vseUstanove(){
+  const s = new Set(nastavitve.ustanove);
+  pacienti.forEach(p => { if(p.mrUstanova) s.add(p.mrUstanova); });
+  return Array.from(s).sort((a, b) => a.localeCompare(b, 'sl'));
+}
+function napolniFiltre(){
+  const opcije = '<option value="">Vse ustanove</option>' +
+    vseUstanove().map(u => '<option value="' + esc(u) + '">' + esc(u) + '</option>').join('');
+  ['#filCak', '#filNar', '#filArh'].forEach(id => {
+    const el = $(id);
+    const prej = el.value;
+    el.innerHTML = opcije;
+    el.value = prej;
+    if(el.selectedIndex < 0) el.value = '';
+  });
+}
+function renderUstanove(){
+  const u = nastavitve.ustanove;
+  $('#sezUstanov').innerHTML = u.length ? u.map((x, i) =>
+    '<div class="kopija"><span>' + esc(x) + '</span>' +
+    '<button class="gumb nevaren mali" data-a="ustanovaBrisi" data-idx="' + i + '">Odstrani</button></div>'
+  ).join('') : '<p class="namig" style="margin:0">Še ni vnesenih ustanov — dodaj prvo zgoraj.</p>';
+}
+function dodajUstanovo(){
+  const v = $('#polUstanova').value.trim();
+  if(!v) return;
+  if(nastavitve.ustanove.some(u => u.toLowerCase() === v.toLowerCase())){
+    toast('Ta ustanova je že na seznamu.');
+    return;
+  }
+  const prej = nastavitve.ustanove.slice();
+  nastavitve.ustanove.push(v);
+  nastavitve.ustanove.sort((a, b) => a.localeCompare(b, 'sl'));
+  if(!shraniNastavitve()){ nastavitve.ustanove = prej; return; }
+  $('#polUstanova').value = '';
+  renderUstanove();
+  napolniFiltre();
+  toast('Ustanova je dodana.');
+}
+
+/* ═══ 4 · Izris seznamov ═══ */
+function ustreza(p, q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  return [p.ime, p.priimek, p.ime + ' ' + p.priimek, p.priimek + ' ' + p.ime, p.maticniIndeks, p.telefon, p.mrUstanova]
+    .some(v => (v || '').toLowerCase().includes(q));
+}
+function ustrezaFilter(p, f){ return !f || p.mrUstanova === f; }
+function metaVrsta(p){
+  const d = ['MI: <b>' + esc(p.maticniIndeks) + '</b>'];
+  if(p.datumRojstva) d.push('roj. ' + fmtD(p.datumRojstva));
+  if(p.telefon) d.push(esc(p.telefon));
+  if(p.mrUstanova) d.push('MR: ' + esc(p.mrUstanova));
+  return d.join(' · ');
+}
+
+function formatBajtov(n){
+  n=Number(n||0); if(n<1024) return n+' B';
+  const e=['KB','MB','GB','TB']; let i=-1;
+  do{ n/=1024; i++; }while(n>=1024 && i<e.length-1);
+  return n.toLocaleString('sl-SI',{maximumFractionDigits:n>=100?0:n>=10?1:2})+' '+e[i];
+}
+function dokumentStatus(p){
+  if(!JE_NAMIZNA) return '';
+  const d=dokumentiPovzetek[p.id]||{};
+  return '<div class="dok-status">' +
+    '<span class="dok-zn '+(d.hasDicom?'ok':'manjka')+'">'+(d.hasDicom?'✓':'!')+' DICOM</span>' +
+    '<span class="dok-zn '+(d.hasPdf?'ok':'manjka')+'">'+(d.hasPdf?'✓':'!')+' MR izvid</span>' +
+    '</div>';
+}
+function dokumentGumb(p){
+  return JE_NAMIZNA ? '<button class="gumb drugi mali" data-a="dokumenti" data-id="'+esc(p.id)+'">Dokumenti</button>' : '';
+}
+function osveziDokumentPovzetek(){
+  if(!JE_NAMIZNA) return;
+  try{
+    const odgovor=window.desktopApi.documentsGetSummary();
+    if(!odgovor||!odgovor.ok) throw napakaNamiznegaOdgovora(odgovor,'Povzetka dokumentov ni mogoče prebrati.');
+    dokumentiPovzetek=odgovor.result||{};
+  }catch(e){ console.warn('Povzetek dokumentov ni dosegljiv:',e); }
+}
+
+function osveziMnozicnoVrstico(){
+  const cakalniIds = new Set(pacienti.filter(p => p.status === 'cakalni').map(p => p.id));
+  for(const id of Array.from(izbraniPacienti)) if(!cakalniIds.has(id)) izbraniPacienti.delete(id);
+  const st = izbraniPacienti.size;
+  const el = $('#mnozicnaStevilo');
+  if(el) el.textContent = 'Izbranih: ' + st;
+  const g = $('#gumbNarociIzbrane');
+  if(g) g.disabled = st === 0;
+}
+function izbraniCakalniPacienti(){
+  const vrstni = pacienti.filter(p => p.status === 'cakalni' && izbraniPacienti.has(p.id));
+  vrstni.sort((a,b) => (a.datumVpisa||'').localeCompare(b.datumVpisa||'') || (a.priimek||'').localeCompare(b.priimek||'','sl'));
+  return vrstni;
+}
+function mnozicniDatumPovzetek(){
+  const dat = $('#mnDatum').value;
+  const count = mnozicniVrstniRed.length;
+  const proste = dat ? terminiZaDatum(dat).filter(ura => !terminZaseden(dat, ura, '')).length : 0;
+  const el = $('#mnPovzetek');
+  if(!dat){ el.className='stanje slabo'; el.textContent='Ni razpisanega dne z dovolj prostimi termini.'; return; }
+  const seja=urnikZaDatum(dat);
+  el.className='stanje '+(proste>=count?'ok':'slabo');
+  el.textContent=fmtD(dat)+': '+proste+' prostih mest · izbranih '+count+(seja?' · urnik '+seja.zacetek+'–'+seja.konec:'')+'.';
+}
+function renderMnozicniSeznam(){
+  $('#mnSeznam').innerHTML = mnozicniVrstniRed.map((id,i) => {
+    const p=pacienti.find(x=>x.id===id); if(!p) return '';
+    const d=dokumentiPovzetek[p.id]||{};
+    return '<div class="mnozicni-vrstica" data-mn-id="'+esc(p.id)+'">'+
+      '<div class="mnozicni-zap">'+(i+1)+'</div><div><div class="mnozicni-ime">'+esc(p.priimek)+' '+esc(p.ime)+'</div>'+
+      '<div class="mnozicni-meta">MI '+esc(p.maticniIndeks)+' · '+(d.hasDicom?'DICOM ✓':'DICOM manjka')+' · '+(d.hasPdf?'izvid ✓':'izvid manjka')+'</div></div>'+
+      '<div class="mnozicni-premik"><button class="gumb drugi mali" data-mn-a="gor" '+(i===0?'disabled':'')+'>↑</button><button class="gumb drugi mali" data-mn-a="dol" '+(i===mnozicniVrstniRed.length-1?'disabled':'')+'>↓</button></div></div>';
+  }).join('');
+  mnozicniDatumPovzetek();
+}
+function odpriMnozicnoNarocanje(){
+  if(!JE_NAMIZNA) return;
+  const izbrani=izbraniCakalniPacienti();
+  if(!izbrani.length){ alert('Najprej označi paciente na čakalnem seznamu.'); return; }
+  mnozicniVrstniRed=izbrani.map(p=>p.id);
+  const danesIso=toISO(danes());
+  const options=nastavitve.urnik.termini.filter(s=>s.datum>=danesIso).map(s=>{
+    const proste=terminiZaDatum(s.datum).filter(ura=>!terminZaseden(s.datum,ura,'')).length;
+    return {seja:s,proste};
+  });
+  const dovolj=options.find(x=>x.proste>=izbrani.length);
+  $('#mnDatum').innerHTML=options.length?options.map(x=>'<option value="'+esc(x.seja.datum)+'" '+(x.proste<izbrani.length?'disabled':'')+'>'+fmtD(x.seja.datum)+' — '+x.proste+' prostih od '+x.seja.pacientov+'</option>').join(''):'<option value="">Ni razpisanih terminov</option>';
+  if(dovolj) $('#mnDatum').value=dovolj.seja.datum;
+  renderMnozicniSeznam();
+  $('#zastorMnozicno').classList.add('odprt');
+}
+function potrdiMnozicnoNarocanje(){
+  const dat=$('#mnDatum').value;
+  if(!jeISO(dat)){ alert('Izberi dan z dovolj prostimi termini.'); return; }
+  const veljavni=mnozicniVrstniRed.map(id=>pacienti.find(p=>p.id===id)).filter(p=>p&&p.status==='cakalni');
+  if(veljavni.length!==mnozicniVrstniRed.length){ alert('Seznam se je medtem spremenil. Zapri okno in ponovno izberi paciente.'); return; }
+  const proste=terminiZaDatum(dat).filter(ura=>!terminZaseden(dat,ura,''));
+  if(proste.length<veljavni.length){ alert('Na izbranem dnevu ni več dovolj prostih mest.'); mnozicniDatumPovzetek(); return; }
+  veljavni.forEach((p,i)=>{ p.terminDatum=dat; p.terminUra=proste[i]; p.status='narocen'; });
+  if(!shrani('množično naročanje: '+veljavni.length+' pacientov')) return;
+  veljavni.forEach(p=>izbraniPacienti.delete(p.id));
+  mnozicniVrstniRed=[];
+  $('#zastorMnozicno').classList.remove('odprt');
+  toast(veljavni.length+' pacientov je naročenih za '+fmtD(dat)+'.');
+  pokaziZavihek('naroceni');
+}
+function premakniMnozicnega(id,smer){
+  const i=mnozicniVrstniRed.indexOf(id); if(i<0) return;
+  const j=smer==='gor'?i-1:i+1; if(j<0||j>=mnozicniVrstniRed.length) return;
+  [mnozicniVrstniRed[i],mnozicniVrstniRed[j]]=[mnozicniVrstniRed[j],mnozicniVrstniRed[i]];
+  renderMnozicniSeznam();
+}
+function renderIzvozPriprava(p){
+  izvozPriprava=p;
+  const manjka=Array.isArray(p.missing)?p.missing:[];
+  const el=$('#izvozStanje');
+  el.className='stanje '+(manjka.length?'slabo':'ok');
+  el.innerHTML='<b>'+p.patientCount+'</b> pacientov · približno <b>'+p.estimatedFiles+'</b> datotek · <b>'+formatBajtov(p.estimatedBytes)+'</b>'+(manjka.length?' · manjka '+manjka.length+' dokumentov':' · vsi dokumenti so pripravljeni')+'.';
+  $('#izvozSeznam').innerHTML=p.patients.map(x=>'<div class="izvoz-pacient"><div class="mnozicni-zap">'+x.order+'</div><div><div class="mnozicni-ime">'+esc(x.terminUra)+' · '+esc(x.priimek)+' '+esc(x.ime)+'</div><div class="mnozicni-meta">MI '+esc(x.maticniIndeks)+'</div></div><div class="izvoz-dok"><span class="dok-zn '+(x.hasDicom?'ok':'manjka')+'">'+(x.hasDicom?'✓':'!')+' DICOM</span><span class="dok-zn '+(x.hasPdf?'ok':'manjka')+'">'+(x.hasPdf?'✓':'!')+' izvid</span></div></div>').join('');
+  $('#izvozDovoliOvoj').style.display=manjka.length?'flex':'none';
+  $('#izvozDovoliManjkajoce').checked=false;
+  $('#gumbIzvozZacni').disabled=p.patientCount===0;
+}
+async function odpriIzvozDatuma(datum){
+  if(!JE_NAMIZNA) return;
+  izvozDatum=datum; izvozPriprava=null; izvozCiljnaMapa='';
+  $('#nasIzvoz').textContent='Pripravi prenos za '+fmtD(datum);
+  $('#izvozStanje').className='stanje'; $('#izvozStanje').textContent='Pregledujem naročene paciente in dokumente …';
+  $('#izvozSeznam').innerHTML=''; $('#izvozDovoliOvoj').style.display='none';
+  $('#izvozNapredek').classList.remove('viden'); $('#izvozRezultat').style.display='none';
+  $('#gumbIzvozOdpri').style.display='none'; $('#gumbIzvozPreklici').style.display='none'; $('#gumbIzvozZacni').style.display='';
+  $('#zastorIzvoz').classList.add('odprt');
+  try{ renderIzvozPriprava(await window.desktopApi.exportsPrepare(datum)); }
+  catch(e){ $('#izvozStanje').className='stanje slabo'; $('#izvozStanje').textContent=e.message||'Pregled prenosa ni uspel.'; $('#gumbIzvozZacni').disabled=true; }
+}
+function prikaziIzvozNapredek(p){
+  if(!p||!izvozPoteka) return;
+  $('#izvozNapredek').classList.add('viden');
+  $('#izvozNapredekBesedilo').textContent=p.message||'Prenos poteka …';
+  let odst=0;
+  if(Number(p.totalBytes)>0) odst=Math.round(Number(p.bytesDone||0)/Number(p.totalBytes)*100);
+  else if(Number(p.totalFiles)>0) odst=Math.round(Number(p.filesDone||0)/Number(p.totalFiles)*100);
+  $('#izvozNapredekProga').style.width=Math.max(0,Math.min(100,odst))+'%';
+}
+async function zacniIzvoz(){
+  if(!izvozPriprava||izvozPoteka) return;
+  const manjka=(izvozPriprava.missing||[]).length;
+  const dovoli=$('#izvozDovoliManjkajoce').checked;
+  if(manjka&&!dovoli){ alert('Nekaterim pacientom manjkajo dokumenti. Označi potrditev za nadaljevanje ali najprej dodaj manjkajoče datoteke.'); return; }
+  izvozPoteka=true;
+  $('#gumbIzvozZacni').style.display='none'; $('#gumbIzvozPreklici').style.display=''; $('#gumbIzvozZapri').disabled=true;
+  $('#izvozNapredek').classList.add('viden'); $('#izvozNapredekBesedilo').textContent='Izberi USB ali ciljno mapo …'; $('#izvozNapredekProga').style.width='0%';
+  try{
+    const r=await window.desktopApi.exportsChooseAndStart(izvozDatum,dovoli);
+    if(!r||r.canceled){ $('#izvozNapredek').classList.remove('viden'); return; }
+    const x=r.result||{}; izvozCiljnaMapa=x.destinationPath||'';
+    $('#izvozNapredekProga').style.width='100%';
+    $('#izvozRezultat').style.display='block';
+    $('#izvozRezultat').innerHTML='<b>Prenos je končan in preverjen.</b><br>'+x.exportedPatientCount+' pacientov · '+x.fileCount+' datotek · '+formatBajtov(x.totalBytes)+'<div class="izvoz-pot">'+esc(x.destinationPath||'')+'</div>';
+    $('#gumbIzvozOdpri').style.display='';
+    toast('Prenos za '+fmtD(izvozDatum)+' je končan.');
+  }catch(e){
+    $('#izvozStanje').className='stanje slabo';
+    $('#izvozStanje').textContent='Prenos ni uspel: '+(e.message||'neznana napaka');
+  }finally{
+    izvozPoteka=false; $('#gumbIzvozPreklici').style.display='none'; $('#gumbIzvozZapri').disabled=false;
+    if(!izvozCiljnaMapa) $('#gumbIzvozZacni').style.display='';
+    osveziIzvozZgodovino();
+  }
+}
+async function osveziIzvozZgodovino(){
+  if(!JE_NAMIZNA||!window.desktopApi.exportsGetHistory) return;
+  try{
+    const h=await window.desktopApi.exportsGetHistory(10);
+    $('#izvozZgodovina').innerHTML=h.length?h.map(x=>'<div class="kopija"><span><b>'+fmtD(x.appointmentDate)+'</b> · '+(x.status==='completed'?'uspešno':x.status==='cancelled'?'preklicano':'napaka')+' · '+x.exportedPatientCount+'/'+x.patientCount+' pacientov · '+formatBajtov(x.totalBytes)+'</span>'+(x.status==='completed'?'<button class="gumb drugi mali" data-izvoz-pot="'+esc(x.destinationPath)+'">Odpri</button>':'')+'</div>').join(''):'<p class="namig" style="margin:0">Prenosa še ni bilo.</p>';
+  }catch(e){ $('#izvozZgodovina').innerHTML='<p class="namig" style="margin:0">Zgodovine prenosov ni mogoče prebrati.</p>'; }
+}
+
+function kartonCak(p){
+  const st = cakaDni(p);
+  return '<article class="karton">' +
+    (JE_NAMIZNA ? '<label class="izbor-pacienta"><input class="izbor-kljuka" type="checkbox" data-id="'+esc(p.id)+'" '+(izbraniPacienti.has(p.id)?'checked':'')+'> Izberi za množično naročanje</label>' : '') +
+    '<div class="vrh"><div>' +
+      '<div class="ime">' + esc(p.priimek) + ' ' + esc(p.ime) + '</div>' +
+      '<div class="meta">' + metaVrsta(p) + '</div>' +
+      '<div class="rokvrsta">Vpisan <b>' + fmtD(p.datumVpisa) + '</b></div>' +
+    '</div>' +
+    '<div class="rok"><span class="st">' + st + '</span><span class="oz">' + dnBes(st) + ' čaka</span></div></div>' +
+    dokumentStatus(p) +
+    (p.opombe ? '<div class="opomba">' + esc(p.opombe) + '</div>' : '') +
+    '<div class="akcije">' +
+      '<button class="gumb mali" data-a="naroci" data-id="' + esc(p.id) + '">Naroči</button>' +
+      dokumentGumb(p) +
+      '<button class="gumb drugi mali" data-a="uredi" data-id="' + esc(p.id) + '">Uredi</button>' +
+      '<button class="gumb nevaren mali" data-a="izbrisi" data-id="' + esc(p.id) + '">Izbriši</button>' +
+    '</div></article>';
+}
+
+function renderCakalni(){
+  const q = $('#iskCak').value.trim();
+  const f = $('#filCak').value;
+  const sez = pacienti.filter(p => p.status === 'cakalni')
+    .sort((a, b) => {
+      const r = (a.datumVpisa || '').localeCompare(b.datumVpisa || '');
+      return r !== 0 ? r : (a.priimek || '').localeCompare(b.priimek || '', 'sl');
+    });
+  if(sez.length){
+    const naj = cakaDni(sez[0]);
+    $('#povzCak').innerHTML = 'Čaka <b>' + sez.length + '</b> ' + sklon(sez.length) +
+      ' · najdlje <b>' + naj + '</b> ' + dnBes(naj);
+  }else{
+    $('#povzCak').innerHTML = '';
+  }
+  const prikaz = sez.filter(p => ustreza(p, q) && ustrezaFilter(p, f));
+  $('#sezCak').innerHTML = prikaz.length
+    ? prikaz.map(kartonCak).join('')
+    : '<div class="prazno">' + (q || f ? 'Ni zadetkov za to iskanje.' : 'Čakalni seznam je prazen. Dodaj pacienta z gumbom »Nov pacient«.') + '</div>';
+  osveziMnozicnoVrstico();
+}
+
+function renderNaroceni(){
+  const q = $('#iskNar').value.trim();
+  const f = $('#filNar').value;
+  const sez = pacienti.filter(p => p.status === 'narocen' && ustreza(p, q) && ustrezaFilter(p, f))
+    .sort((a, b) => ((a.terminDatum || '') + (a.terminUra || '')).localeCompare((b.terminDatum || '') + (b.terminUra || '')));
+  if(!sez.length){
+    $('#sezNar').innerHTML = '<div class="prazno">' + (q || f ? 'Ni zadetkov za to iskanje.' : 'Nihče še ni naročen. Pacienta naročiš na čakalnem seznamu z gumbom »Naroči«.') + '</div>';
+    return;
+  }
+  const dISO = toISO(danes());
+  let html = '', zadnji = null;
+  for(const p of sez){
+    if(p.terminDatum !== zadnji){
+      zadnji = p.terminDatum;
+      const naz = DNEVI[izISO(p.terminDatum).getDay()];
+      const dnevni=pacienti.filter(x=>x.status==='narocen'&&x.terminDatum===p.terminDatum);
+      const manjkaDok=dnevni.reduce((n,x)=>{const d=dokumentiPovzetek[x.id]||{}; return n+(!d.hasDicom?1:0)+(!d.hasPdf?1:0);},0);
+      html += '<div class="dan-vrstica"><div class="dan">' + naz.charAt(0).toUpperCase() + naz.slice(1) + ', ' + fmtD(p.terminDatum) +
+        (p.terminDatum === dISO ? '<span class="danes">danes</span>' : '') + '</div>' +
+        (JE_NAMIZNA?'<span class="dan-prenos-info">'+dnevni.length+' pacientov'+(manjkaDok?' · manjka '+manjkaDok:' · pripravljeno')+'</span><button class="gumb drugi mali" data-a="izvoziDan" data-datum="'+esc(p.terminDatum)+'">Pripravi prenos</button>':'')+'</div>';
+    }
+    const mimo = p.terminDatum < dISO;
+    html += '<article class="karton ' + (mimo ? 'zamuda' : '') + '">' +
+      '<div class="vrh"><div class="ura">' + esc(p.terminUra || '—') + '</div><div>' +
+        '<div class="ime">' + esc(p.priimek) + ' ' + esc(p.ime) + '</div>' +
+        '<div class="meta">' + metaVrsta(p) + '</div>' +
+      '</div></div>' +
+      (mimo ? '<div class="mimo">Termin je minil — zabeleži izid.</div>' : '') +
+      dokumentStatus(p) +
+      (p.opombe ? '<div class="opomba">' + esc(p.opombe) + '</div>' : '') +
+      '<div class="akcije">' +
+        '<button class="gumb mali" data-a="opravljeno" data-id="' + esc(p.id) + '">Označi opravljeno</button>' +
+        '<button class="gumb drugi mali" data-a="prestavi" data-id="' + esc(p.id) + '">Prestavi</button>' +
+        dokumentGumb(p) +
+        '<button class="gumb drugi mali" data-a="uredi" data-id="' + esc(p.id) + '">Uredi</button>' +
+        '<button class="gumb nevaren mali" data-a="odpovej" data-id="' + esc(p.id) + '">Odpovej</button>' +
+      '</div></article>';
+  }
+  $('#sezNar').innerHTML = html;
+}
+
+function renderArhiv(){
+  const q = $('#iskArh').value.trim();
+  const f = $('#filArh').value;
+  const sez = pacienti.filter(p => (p.status === 'opravljeno' || p.status === 'odpovedan') && ustreza(p, q) && ustrezaFilter(p, f))
+    .sort((a, b) => (b.datumZakljucka || '').localeCompare(a.datumZakljucka || ''));
+  $('#sezArh').innerHTML = sez.length ? sez.map(p => {
+    const opr = p.status === 'opravljeno';
+    const zn = opr ? '<span class="znacka zn-opr">Opravljeno</span>' : '<span class="znacka zn-odp">Odpovedano</span>';
+    return '<article class="karton ' + (opr ? 'ok' : 'arhivsko') + '">' +
+      '<div class="vrh"><div>' +
+        '<div class="ime">' + esc(p.priimek) + ' ' + esc(p.ime) + zn + '</div>' +
+        '<div class="meta">' + metaVrsta(p) + '</div>' +
+        '<div class="rokvrsta">' + (opr ? 'Opravljeno' : 'Odpovedano') + ' <b>' + fmtD(p.datumZakljucka) + '</b>' +
+          (p.terminDatum ? ' · termin ' + fmtD(p.terminDatum) + (p.terminUra ? ' ob ' + esc(p.terminUra) : '') : '') + '</div>' +
+      '</div></div>' +
+      dokumentStatus(p) +
+      (p.opombe ? '<div class="opomba">' + esc(p.opombe) + '</div>' : '') +
+      '<div class="akcije">' +
+        dokumentGumb(p) +
+        '<button class="gumb drugi mali" data-a="vrni" data-id="' + esc(p.id) + '">Vrni na čakalni seznam</button>' +
+        '<button class="gumb nevaren mali" data-a="izbrisi" data-id="' + esc(p.id) + '">Izbriši trajno</button>' +
+      '</div></article>';
+  }).join('') : '<div class="prazno">' + (q || f ? 'Ni zadetkov za to iskanje.' : 'Arhiv je prazen.') + '</div>';
+}
+
+function renderKopije(){
+  const k = kopije();
+  $('#sezKopij').innerHTML = k.length ? k.map((x, i) => {
+    let n = 0; try{ n = JSON.parse(x.podatki).length; }catch(e){}
+    const d = new Date(x.cas);
+    return '<div class="kopija"><span>' +
+      d.toLocaleDateString('sl-SI') + ' ' + d.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'}) +
+      ' · ' + esc(x.opis) + ' · ' + n + ' zapisov</span>' +
+      '<button class="gumb drugi mali" data-a="povrni" data-idx="' + i + '">Povrni</button></div>';
+  }).join('') : '<p class="namig" style="margin:0">Kopije se ustvarijo samodejno ob vsaki spremembi seznama.</p>';
+}
+
+function mesecISO(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function oznakaMeseca(m){
+  if(!/^\d{4}-\d{2}$/.test(m)) return m;
+  const [y,mo] = m.split('-').map(Number);
+  return new Date(y, mo-1, 1).toLocaleDateString('sl-SI', {month:'short', year:'numeric'}).replace('.', '');
+}
+function meseciMed(od, doMeseca){
+  if(!/^\d{4}-\d{2}$/.test(od) || !/^\d{4}-\d{2}$/.test(doMeseca) || od > doMeseca) return [];
+  const [y,m] = od.split('-').map(Number), [yy,mm] = doMeseca.split('-').map(Number);
+  const r = [], d = new Date(y,m-1,1), konec = new Date(yy,mm-1,1);
+  while(d <= konec && r.length < 120){ r.push(mesecISO(d)); d.setMonth(d.getMonth()+1); }
+  return r;
+}
+function mediana(v){
+  if(!v.length) return 0;
+  const a = v.slice().sort((x,y)=>x-y), i = Math.floor(a.length/2);
+  return a.length % 2 ? a[i] : Math.round((a[i-1]+a[i])/2);
+}
+function pripraviStatObdobje(){
+  const odEl = $('#statOd'), doEl = $('#statDo');
+  if(!odEl || !doEl) return [];
+  const zdaj = new Date();
+  if(!doEl.value) doEl.value = mesecISO(zdaj);
+  if(!odEl.value){ const d = new Date(zdaj.getFullYear(), zdaj.getMonth()-11, 1); odEl.value = mesecISO(d); }
+  if(odEl.value > doEl.value) odEl.value = doEl.value;
+  return meseciMed(odEl.value, doEl.value);
+}
+function datumStatZapisa(p){ return p.terminDatum || p.datumZakljucka || ''; }
+function renderStatistika(){
+  if(!$('#statKartice')) return;
+  const meseci = pripraviStatObdobje();
+  const set = new Set(meseci);
+  const vObdobju = pacienti.filter(p => { const d = datumStatZapisa(p); return d && set.has(d.slice(0,7)); });
+  const vsiTermini = vObdobju;
+  const opravljeni = vObdobju.filter(p => p.status === 'opravljeno');
+  const odpovedani = vObdobju.filter(p => p.status === 'odpovedan');
+  const cakalni = pacienti.filter(p => p.status === 'cakalni');
+  const cakanja = cakalni.map(cakaDni);
+  const oprCakanja = opravljeni.map(p => {
+    const a=izISO(p.datumVpisa), b=izISO(p.terminDatum || p.datumZakljucka);
+    return a && b ? Math.max(0,Math.round((b-a)/DAN)) : null;
+  }).filter(x => x != null);
+  const zakljuceni = opravljeni.length + odpovedani.length;
+  const uspesnost = zakljuceni ? Math.round(opravljeni.length / zakljuceni * 100) : 0;
+  const razpisaniDnevi = nastavitve.urnik.termini.filter(x => set.has(x.datum.slice(0,7)));
+  const razpisanaMesta = razpisaniDnevi.reduce((n,x) => n + terminiZaPravilo(x).length, 0);
+  const zasedenaMesta = razpisaniDnevi.reduce((n,x) => n + rezerviraniZaDatum(x.datum).length, 0);
+  const kartice = [
+    [cakalni.length,'Trenutno čaka', cakalni.length ? 'najdlje ' + Math.max(...cakanja) + ' dni' : 'seznam je prazen'],
+    [vsiTermini.length,'Termini v obdobju',meseci.length + ' mesecev'],
+    [razpisaniDnevi.length,'Dni fuzij','v izbranem obdobju'],
+    [razpisanaMesta,'Razpisana mesta','zasedeno: ' + zasedenaMesta + ' · prosto: ' + Math.max(0,razpisanaMesta-zasedenaMesta)],
+    [opravljeni.length,'Opravljeno',zakljuceni ? uspesnost + '% zaključenih' : 'ni zaključenih'],
+    [odpovedani.length,'Odpovedano',zakljuceni ? (100-uspesnost) + '% zaključenih' : 'ni zaključenih'],
+    [mediana(cakanja),'Mediana čakanja','trenutni čakalni seznam · dni'],
+    [oprCakanja.length ? Math.round(oprCakanja.reduce((a,b)=>a+b,0)/oprCakanja.length) : 0,'Povprečno do termina','opravljeni v obdobju · dni']
+  ];
+  $('#statKartice').innerHTML = kartice.map(x => '<div class="stat-karta"><div class="stat-stevilo">'+x[0]+'</div><div class="stat-oznaka">'+x[1]+'</div><div class="stat-podatek">'+x[2]+'</div></div>').join('');
+  const poMesecih = meseci.map(m => {
+    const zap = vObdobju.filter(p => datumStatZapisa(p).slice(0,7) === m);
+    return {m, vsi:zap.length, opr:zap.filter(p=>p.status==='opravljeno').length, odp:zap.filter(p=>p.status==='odpovedan').length, aktivni:zap.filter(p=>p.status==='narocen').length};
+  });
+  const max = Math.max(1,...poMesecih.map(x=>x.vsi));
+  $('#statGraf').innerHTML = poMesecih.length ? poMesecih.map(x => {
+    const wO=x.opr/max*100, wA=x.aktivni/max*100, wD=x.odp/max*100;
+    return '<div class="graf-vrsta"><div class="graf-ime">'+esc(oznakaMeseca(x.m))+'</div><div class="graf-proga" title="Opravljeno '+x.opr+', naročeno '+x.aktivni+', odpovedano '+x.odp+'"><span class="graf-del graf-opr" style="width:'+wO+'%"></span><span class="graf-del graf-nar" style="width:'+wA+'%"></span><span class="graf-del graf-odp" style="width:'+wD+'%"></span></div><div class="graf-st">'+x.vsi+'</div></div>';
+  }).join('') : '<div class="prazno">Izberi veljavno obdobje.</div>';
+  $('#statTabela').innerHTML = '<table class="stat-tabela"><thead><tr><th>Mesec</th><th>Dni fuzij</th><th>Kapaciteta</th><th>Vsi termini</th><th>Naročeni</th><th>Opravljeni</th><th>Odpovedani</th></tr></thead><tbody>' +
+    poMesecih.map(x=>{ const dnevi=nastavitve.urnik.termini.filter(s=>s.datum.slice(0,7)===x.m); const kap=dnevi.reduce((n,s)=>n+terminiZaPravilo(s).length,0); return '<tr><td>'+esc(oznakaMeseca(x.m))+'</td><td>'+dnevi.length+'</td><td>'+kap+'</td><td>'+x.vsi+'</td><td>'+x.aktivni+'</td><td>'+x.opr+'</td><td>'+x.odp+'</td></tr>'; }).join('') +
+    '</tbody></table>';
+}
+
+function renderVse(){
+  $('#znCak').textContent = pacienti.filter(p => p.status === 'cakalni').length;
+  $('#znNar').textContent = pacienti.filter(p => p.status === 'narocen').length;
+  napolniFiltre();
+  renderCakalni(); renderNaroceni(); renderArhiv(); renderKopije(); renderStatistika();
+  osveziMnozicnoVrstico();
+}
+
+/* ═══ 5 · Pacienti: vnos in urejanje ═══ */
+let urejamId = null;
+function odpriObrazec(p){
+  urejamId = p ? p.id : null;
+  $('#nasPacient').textContent = p ? 'Uredi pacienta' : 'Nov pacient';
+  $('#fIme').value = p ? p.ime : '';
+  $('#fPriimek').value = p ? p.priimek : '';
+  $('#fRojstvo').value = p && p.datumRojstva ? p.datumRojstva : '';
+  $('#fIndeks').value = p ? p.maticniIndeks : '';
+  $('#fTelefon').value = p && p.telefon ? p.telefon : '';
+  const trenutna = p && p.mrUstanova ? p.mrUstanova : '';
+  const u = nastavitve.ustanove.slice();
+  if(trenutna && u.indexOf(trenutna) < 0) u.push(trenutna);
+  $('#fUstanova').innerHTML = '<option value="">— ni podatka —</option>' +
+    u.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
+  $('#fUstanova').value = trenutna;
+  $('#fVpis').value = p ? p.datumVpisa : toISO(danes());
+  $('#fOpombe').value = p && p.opombe ? p.opombe : '';
+  $('#zastorPacient').classList.add('odprt');
+  $('#fIme').focus();
+}
+function zapriObrazce(){ document.querySelectorAll('.zastor').forEach(z => { if(z.id==='zastorDokumenti'&&dokumentiAkcijaPoteka) return; if(z.id==='zastorIzvoz'&&izvozPoteka) return; z.classList.remove('odprt'); }); }
+
+function shraniPacienta(){
+  const ime = $('#fIme').value.trim(), priimek = $('#fPriimek').value.trim(), mi = $('#fIndeks').value.trim();
+  if(!ime || !priimek || !mi){ alert('Ime, priimek in matični indeks so obvezni.'); return; }
+  const dvojnik = pacienti.find(p => p.id !== urejamId && (p.maticniIndeks || '').trim().toLowerCase() === mi.toLowerCase());
+  if(dvojnik && !confirm('Pacient z matičnim indeksom ' + mi + ' že obstaja:\n' + dvojnik.priimek + ' ' + dvojnik.ime + ' (' + STAT[dvojnik.status] + ').\n\nVseeno shranim?')) return;
+  const podatki = {
+    ime: ime, priimek: priimek, maticniIndeks: mi,
+    datumRojstva: $('#fRojstvo').value, telefon: $('#fTelefon').value.trim(),
+    mrUstanova: $('#fUstanova').value, datumVpisa: $('#fVpis').value || toISO(danes()),
+    opombe: $('#fOpombe').value.trim()
+  };
+  if(urejamId){
+    const p = pacienti.find(x => x.id === urejamId);
+    if(!p) return;
+    Object.assign(p, podatki);
+    if(shrani('urejanje: ' + priimek)){
+      zapriObrazce();
+      toast('Podatki so shranjeni.');
+    }
+  }else{
+    const novi = Object.assign({id: uid(), status: 'cakalni'}, podatki);
+    pacienti.push(novi);
+    if(shrani('nov pacient: ' + priimek)){
+      zapriObrazce();
+      toast('Pacient je dodan na čakalni seznam.');
+    }
+  }
+}
+
+/* ═══ 6 · Termini ═══ */
+let terminId = null;
+function napolniDatumeTerminov(zelenaDatum){
+  const p = pacienti.find(x => x.id === terminId);
+  const el = $('#tDatum');
+  el.innerHTML = '';
+  const danesISO = toISO(danes());
+  const seje = nastavitve.urnik.termini.slice().sort((a,b) => a.datum.localeCompare(b.datum));
+  const trenutniDatum = p && p.terminDatum ? p.terminDatum : '';
+  for(const seja of seje){
+    if(seja.datum < danesISO && seja.datum !== trenutniDatum) continue;
+    const prostih = prostihZaDatum(seja.datum, terminId);
+    const o = document.createElement('option');
+    o.value = seja.datum;
+    o.textContent = fmtD(seja.datum) + ' (' + IMENA_DNI[izISO(seja.datum).getDay()].toLowerCase() + ') — ' + prostih + ' prostih od ' + terminiZaDatum(seja.datum).length;
+    o.disabled = prostih === 0 && seja.datum !== trenutniDatum;
+    el.appendChild(o);
+  }
+  if(trenutniDatum && !urnikZaDatum(trenutniDatum)){
+    const o = document.createElement('option');
+    o.value = trenutniDatum;
+    o.textContent = fmtD(trenutniDatum) + ' — trenutni termin, datum ni več razpisan';
+    el.insertBefore(o, el.firstChild);
+  }
+  const zelena = zelenaDatum || trenutniDatum;
+  if(zelena && Array.from(el.options).some(o => o.value === zelena && !o.disabled)) el.value = zelena;
+  else{
+    const prvi = Array.from(el.options).find(o => !o.disabled);
+    if(prvi) el.value = prvi.value;
+  }
+}
+function osveziTerminskeUre(zelenaUra){
+  const p = pacienti.find(x => x.id === terminId);
+  const dat = $('#tDatum').value;
+  const el = $('#tUra'), info = $('#terminProsti');
+  el.innerHTML = '';
+  if(!jeISO(dat)){
+    info.className = 'stanje slabo'; info.textContent = 'Ni razpisanega prostega dne fuzij. Najprej ga dodaj v Nastavitvah.'; return;
+  }
+  const seja = urnikZaDatum(dat);
+  const lastniStari = p && p.terminDatum === dat ? p.terminUra : '';
+  if(!seja){
+    if(lastniStari){
+      const o = document.createElement('option');
+      o.value = lastniStari; o.textContent = lastniStari + ' — trenutni termin, datum ni več razpisan';
+      el.appendChild(o); el.value = lastniStari;
+      info.className = 'stanje slabo'; info.textContent = 'Ta stari termin lahko ohraniš, za prestavitev pa izberi enega od razpisanih datumov.';
+    }else{
+      info.className = 'stanje slabo'; info.textContent = 'Ta datum ni razpisan za fuzijske biopsije.';
+    }
+    return;
+  }
+  const vse = terminiZaDatum(dat);
+  let prostih = 0;
+  for(const ura of vse){
+    const zaseden = terminZaseden(dat, ura, terminId);
+    const o = document.createElement('option');
+    o.value = ura; o.textContent = ura + (zaseden ? ' — zasedeno' : ' — prosto'); o.disabled = zaseden;
+    el.appendChild(o);
+    if(!zaseden) prostih++;
+  }
+  if(lastniStari && !vse.includes(lastniStari)){
+    const o = document.createElement('option');
+    o.value = lastniStari; o.textContent = lastniStari + ' — trenutni termin izven spremenjenega urnika';
+    el.insertBefore(o, el.firstChild);
+  }
+  const izberi = zelenaUra || lastniStari;
+  if(izberi && Array.from(el.options).some(o => o.value === izberi && !o.disabled)) el.value = izberi;
+  else{
+    const prvi = Array.from(el.options).find(o => !o.disabled);
+    if(prvi) el.value = prvi.value;
+  }
+  info.className = 'stanje' + (prostih ? ' ok' : ' slabo');
+  info.textContent = fmtD(dat) + ': ' + prostih + ' prostih od ' + vse.length + ' mest · ' + seja.zacetek + '–' + seja.konec + (seja.malicaOd ? ' · malica ' + seja.malicaOd + '–' + seja.malicaDo : '') + '.';
+}
+function nastaviPrviProsti(){
+  const r = prviProstiTermin(toISO(danes()), terminId);
+  if(!r){ alert('Ni razpisanega prostega termina. Dodaj nov dan fuzij v Nastavitvah.'); return; }
+  napolniDatumeTerminov(r.datum);
+  $('#tDatum').value = r.datum;
+  osveziTerminskeUre(r.ura);
+}
+function odpriTermin(id){
+  const p = pacienti.find(x => x.id === id);
+  if(!p) return;
+  terminId = id;
+  $('#nasTermin').textContent = p.status === 'narocen' ? 'Prestavi termin' : 'Naroči pacienta';
+  const st = cakaDni(p);
+  $('#terminOseba').innerHTML = esc(p.priimek) + ' ' + esc(p.ime) +
+    ' · vpisan ' + fmtD(p.datumVpisa) + ' · čaka <b>' + st + '</b> ' + dnBes(st);
+  const r = p.terminDatum ? {datum:p.terminDatum, ura:p.terminUra} : prviProstiTermin(toISO(danes()), id);
+  napolniDatumeTerminov(r ? r.datum : '');
+  if(r) $('#tDatum').value = r.datum;
+  osveziTerminskeUre(r ? r.ura : '');
+  $('#zastorTermin').classList.add('odprt');
+}
+function shraniTermin(){
+  const p = pacienti.find(x => x.id === terminId);
+  if(!p) return;
+  const dat = $('#tDatum').value, ura = $('#tUra').value;
+  if(!jeISO(dat) || !veljavnaUra(ura)){ alert('Izberi razpisan datum in prosto uro termina.'); return; }
+  const jeStariLastni = p.terminDatum === dat && p.terminUra === ura;
+  if(!urnikZaDatum(dat) && !jeStariLastni){ alert('Ta datum ni več razpisan za fuzijske biopsije.'); return; }
+  if(urnikZaDatum(dat) && !terminiZaDatum(dat).includes(ura) && !jeStariLastni){ alert('Izbrana ura ni del urnika za ta datum.'); return; }
+  if(terminZaseden(dat, ura, p.id)){ alert('Ta termin je medtem zasedel drug pacient. Izberi drugo uro.'); osveziTerminskeUre(); return; }
+  p.terminDatum = dat; p.terminUra = ura; p.status = 'narocen';
+  if(!shrani('termin: ' + p.priimek)) return;
+  zapriObrazce();
+  toast(p.priimek + ' ' + p.ime + ' — naročen ' + fmtD(dat) + ' ob ' + ura + '.');
+  pokaziZavihek('naroceni');
+}
+
+/* ═══ 7 · Akcije na kartonih ═══ */
+document.querySelector('main').addEventListener('click', e => {
+  const g = e.target.closest('[data-a]');
+  if(!g) return;
+  const id = g.dataset.id;
+  const p = pacienti.find(x => x.id === id);
+  switch(g.dataset.a){
+    case 'izvoziDan':
+      odpriIzvozDatuma(g.dataset.datum); break;
+    case 'naroci':
+    case 'prestavi':
+      odpriTermin(id); break;
+    case 'uredi':
+      if(p) odpriObrazec(p); break;
+    case 'dokumenti':
+      if(p) odpriDokumente(p.id); break;
+    case 'opravljeno': {
+      if(!p) break;
+      p.status = 'opravljeno'; p.datumZakljucka = toISO(danes());
+      if(shrani('opravljeno: ' + p.priimek)) toast('Označeno kot opravljeno — pacient je v arhivu.');
+      break;
+    }
+    case 'odpovej': {
+      if(!p) break;
+      if(confirm('Odpovem termin za: ' + p.priimek + ' ' + p.ime + '?\nPacient bo shranjen v arhiv kot odpovedan.')){
+        p.status = 'odpovedan'; p.datumZakljucka = toISO(danes());
+        if(shrani('odpoved: ' + p.priimek)) toast('Termin je odpovedan — pacient je v arhivu.');
+      }
+      break;
+    }
+    case 'vrni': {
+      if(!p) break;
+      p.status = 'cakalni'; delete p.terminDatum; delete p.terminUra; delete p.datumZakljucka;
+      if(shrani('vrnitev: ' + p.priimek)){
+        toast('Pacient je spet na čakalnem seznamu.');
+        pokaziZavihek('cakalni');
+      }
+      break;
+    }
+    case 'izbrisi':
+      if(p){
+        const d=dokumentiPovzetek[p.id]||{};
+        const dodatek=(d.hasDicom||d.hasPdf) ? '\n\nDICOM/PDF datoteke zaradi varnosti ostanejo v mapi dokumentov in jih moraš po potrebi odstraniti ročno.' : '';
+        if(!confirm('Trajno izbrišem: ' + p.priimek + ' ' + p.ime + ' (MI ' + p.maticniIndeks + ')?' + dodatek)) break;
+        pacienti.splice(pacienti.indexOf(p), 1);
+        if(shrani('izbris: ' + p.priimek)) toast('Pacient je izbrisan. Po pomoti? Povrni v Nastavitvah.');
+      }
+      break;
+    case 'povrni':
+      povrniKopijo(+g.dataset.idx); break;
+    case 'ustanovaBrisi': {
+      const idx = +g.dataset.idx;
+      const naziv = nastavitve.ustanove[idx];
+      if(naziv != null && confirm('Odstranim ustanovo »' + naziv + '« s seznama?\nPri že vpisanih pacientih podatek ostane.')){
+        const prej = nastavitve.ustanove.slice();
+        nastavitve.ustanove.splice(idx, 1);
+        if(shraniNastavitve()){
+          renderUstanove(); napolniFiltre(); toast('Ustanova je odstranjena.');
+        }else nastavitve.ustanove = prej;
+      }
+      break;
+    }
+  }
+});
+
+function povrniKopijo(i){
+  const k = kopije()[i];
+  if(!k) return;
+  if(!confirm('Povrnem stanje s te kopije? Trenutni seznam bo nadomeščen (pred tem se shrani nova notranja kopija).')) return;
+  try{
+    pacienti = preveriSeznam(JSON.parse(k.podatki), true);
+    if(shrani('povrnitev kopije')) toast('Stanje je povrnjeno.');
+  }catch(e){
+    alert('Te kopije ni mogoče prebrati: ' + e.message);
+  }
+}
+
+/* ═══ 8 · DICOM in MR dokumenti ═══ */
+function formatCasDok(iso){
+  if(!iso) return '—';
+  const d=new Date(iso); if(Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('sl-SI')+' '+d.toLocaleTimeString('sl-SI',{hour:'2-digit',minute:'2-digit'});
+}
+function vrstaDokumenta(kind){ return kind==='dicom'?'DICOM mapa':'MR izvid PDF'; }
+function ikonaDokumenta(kind){ return kind==='dicom'?'▦':'PDF'; }
+function nastaviDokumentGumbe(zaseden){
+  dokumentiAkcijaPoteka=!!zaseden;
+  ['#gumbDodajDicom','#gumbDodajPdf','#gumbOdpriPacMapo','#gumbDokZapri'].forEach(id=>{ const el=$(id); if(el) el.disabled=!!zaseden; });
+  document.querySelectorAll('#dokSeznam button').forEach(b=>b.disabled=!!zaseden);
+}
+function renderDokumenti(assets){
+  const el=$('#dokSeznam');
+  if(!Array.isArray(assets)||!assets.length){
+    el.innerHTML='<div class="prazno">Za pacienta še ni dodane DICOM mape ali MR izvida.</div>';
+    return;
+  }
+  el.innerHTML=assets.map(a=>{
+    const meta=[];
+    if(a.kind==='dicom') meta.push(a.fileCount+' datotek'); else meta.push('PDF');
+    meta.push(formatBajtov(a.totalBytes)); meta.push('dodano '+formatCasDok(a.createdAt));
+    if(a.sourceName) meta.push('izvor: '+a.sourceName);
+    return '<div class="dok-karta '+(a.isCurrent?'':'stara')+'">'+
+      '<div class="dok-glava"><div class="dok-ikona">'+esc(ikonaDokumenta(a.kind))+'</div><div class="raste">'+
+      '<div class="dok-naslov">'+esc(a.displayName)+(a.isCurrent?'<span class="dok-trenutno">trenutno</span>':'')+'</div>'+
+      '<div class="dok-meta">'+meta.map(esc).join(' · ')+'</div></div></div>'+
+      '<div class="akcije">'+
+      '<button class="gumb drugi mali" data-dok-a="odpri" data-asset-id="'+esc(a.id)+'">Odpri</button>'+
+      '<button class="gumb drugi mali" data-dok-a="pokazi" data-asset-id="'+esc(a.id)+'">Pokaži v mapi</button>'+
+      '<button class="gumb nevaren mali" data-dok-a="izbrisi" data-asset-id="'+esc(a.id)+'" data-kind="'+esc(a.kind)+'">Izbriši datoteke</button>'+
+      '</div></div>';
+  }).join('');
+}
+async function osveziDokumentModal(){
+  if(!JE_NAMIZNA||!dokumentiPacientId) return;
+  const r=await window.desktopApi.documentsGetPatient(dokumentiPacientId);
+  renderDokumenti(r&&Array.isArray(r.assets)?r.assets:[]);
+}
+async function odpriDokumente(id){
+  if(!JE_NAMIZNA) return;
+  const p=pacienti.find(x=>x.id===id); if(!p) return;
+  dokumentiPacientId=id;
+  $('#nasDokumenti').textContent='Dokumenti pacienta';
+  $('#dokOseba').innerHTML='<b>'+esc(p.priimek+' '+p.ime)+'</b> · MI '+esc(p.maticniIndeks);
+  $('#dokNapredek').classList.remove('viden');
+  $('#zastorDokumenti').classList.add('odprt');
+  try{ await osveziDokumentModal(); }catch(e){ alert('Dokumentov ni mogoče prebrati: '+e.message); }
+}
+function pokaziDokNapredek(p){
+  if(!p||p.patientId!==dokumentiPacientId) return;
+  const el=$('#dokNapredek'); el.classList.add('viden');
+  $('#dokNapredekBesedilo').textContent=p.message||'Obdelujem dokumente …';
+  const total=Number(p.totalBytes||p.totalFiles||0), done=Number(p.bytesDone||p.filesDone||0);
+  const pct=total>0?Math.max(0,Math.min(100,Math.round(done/total*100))):(p.phase==='done'?100:5);
+  $('#dokNapredekProga').style.width=pct+'%';
+  $('#dokNapredekMeta').textContent=p.totalFiles ? ((p.filesDone||0)+' / '+p.totalFiles+' datotek'+(p.totalBytes?' · '+formatBajtov(p.bytesDone||0)+' / '+formatBajtov(p.totalBytes):'')) : '';
+  if(p.phase==='done'||p.phase==='error') setTimeout(()=>el.classList.remove('viden'),p.phase==='done'?1600:5000);
+}
+async function poDokumentAkciji(rezultat,sporocilo){
+  if(!rezultat||rezultat.canceled) return;
+  osveziDokumentPovzetek(); renderVse(); await osveziDokumentModal(); await osveziDokumentShrambo();
+  if(sporocilo) toast(sporocilo);
+}
+async function uvoziDicom(){
+  if(dokumentiAkcijaPoteka||!dokumentiPacientId) return;
+  nastaviDokumentGumbe(true);
+  try{ await poDokumentAkciji(await window.desktopApi.documentsImportDicom(dokumentiPacientId),'DICOM mapa je kopirana in preverjena.'); }
+  catch(e){ alert('DICOM uvoz ni uspel.\n\n'+(e.message||'Neznana napaka.')); }
+  finally{ nastaviDokumentGumbe(false); }
+}
+async function uvoziPdf(){
+  if(dokumentiAkcijaPoteka||!dokumentiPacientId) return;
+  nastaviDokumentGumbe(true);
+  try{ await poDokumentAkciji(await window.desktopApi.documentsImportPdf(dokumentiPacientId),'MR izvid je kopiran, poimenovan in preverjen.'); }
+  catch(e){ alert('Uvoz MR izvida ni uspel.\n\n'+(e.message||'Neznana napaka.')); }
+  finally{ nastaviDokumentGumbe(false); }
+}
+async function osveziDokumentShrambo(){
+  if(!JE_NAMIZNA||!$('#dokShrambaStanje')) return;
+  try{
+    dokumentiShramba=await window.desktopApi.documentsGetStatus();
+    const s=dokumentiShramba||{};
+    $('#dokShrambaStanje').className='stanje '+(s.writable?'ok':'slabo');
+    $('#dokShrambaStanje').innerHTML=(s.writable?'<b>Shramba je pripravljena.</b>':'<b>Shramba ni dosegljiva.</b>')+
+      '<span class="dok-pot">'+esc(s.rootPath||'—')+'</span>'+
+      (s.error?'<div style="margin-top:5px">'+esc(s.error)+'</div>':'')+
+      '<div style="margin-top:5px">Dokumentov v evidenci: <b>'+Number(s.assetCount||0)+'</b> · zasedeno: <b>'+formatBajtov(s.totalAssetBytes||0)+'</b>'+
+      (s.freeBytes!=null?' · prosto na disku: <b>'+formatBajtov(s.freeBytes)+'</b>':'')+'</div>';
+  }catch(e){
+    $('#dokShrambaStanje').className='stanje slabo';
+    $('#dokShrambaStanje').textContent='Mape dokumentov ni mogoče pripraviti: '+(e.message||'neznana napaka');
+  }
+}
+
+/* ═══ 9 · Samodejni backup v mapo (Chrome/Edge) ═══ */
+let mapa = null, zapisT = null;
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('fb-db', 1);
+    r.onupgradeneeded = () => {
+      if(!r.result.objectStoreNames.contains('h')) r.result.createObjectStore('h');
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function shraniMapo(h){
+  const db = await idb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction('h', 'readwrite');
+    tx.objectStore('h').put(h, 'mapa');
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  });
+  db.close();
+}
+async function naloziMapo(){
+  try{
+    const db = await idb();
+    const h = await new Promise(res => {
+      const rq = db.transaction('h').objectStore('h').get('mapa');
+      rq.onsuccess = () => res(rq.result || null);
+      rq.onerror = () => res(null);
+    });
+    db.close();
+    return h;
+  }catch(e){ console.warn('Mape ni bilo mogoče naložiti:', e); return null; }
+}
+function izvozniObjekt(){
+  return {
+    aplikacija: 'Fuzijska biopsija', verzija: 6, izvozeno: new Date().toISOString(),
+    nastavitve: {ustanove: nastavitve.ustanove, urnik: nastavitve.urnik},
+    pacienti: pacienti
+  };
+}
+function planirajZapis(){
+  clearTimeout(zapisT);
+  if(mapa) zapisT = setTimeout(() => zapisiVMapo(false), 700);
+}
+function backupStar(){
+  if(!nastavitve.zadnjiUspesenBackup) return true;
+  const d = new Date(nastavitve.zadnjiUspesenBackup);
+  return Number.isNaN(d.getTime()) || (Date.now() - d.getTime()) > 3 * DAN;
+}
+async function dovoljenjeMape(zahtevaj){
+  if(!mapa) return 'denied';
+  let d = mapa.queryPermission ? await mapa.queryPermission({mode:'readwrite'}) : 'granted';
+  if(d !== 'granted' && zahtevaj && mapa.requestPermission) d = await mapa.requestPermission({mode:'readwrite'});
+  return d;
+}
+async function zapisiDat(ime, bes){
+  const fh = await mapa.getFileHandle(ime, {create:true});
+  const w = await fh.createWritable();
+  try{
+    await w.write(bes);
+    await w.close();
+  }catch(e){
+    try{ await w.abort(); }catch(_){ }
+    throw e;
+  }
+}
+async function preberiDat(ime){
+  const fh = await mapa.getFileHandle(ime);
+  const f = await fh.getFile();
+  return JSON.parse(await f.text());
+}
+function preveriIzvozniObjekt(o){
+  if(!o || typeof o !== 'object' || !Array.isArray(o.pacienti)) throw new Error('Datoteka nima veljavne strukture.');
+  const preverjeni = preveriSeznam(o.pacienti, true);
+  return {objekt:o, pacienti:preverjeni};
+}
+async function preveriDatoteko(ime, primerjaj){
+  const o = await preberiDat(ime);
+  preveriIzvozniObjekt(o);
+  if(primerjaj && JSON.stringify(o.pacienti) !== JSON.stringify(pacienti)){
+    throw new Error('Prebrana kopija se ne ujema s trenutno bazo.');
+  }
+  return o;
+}
+async function zapisiVMapo(rocno){
+  if(!mapa){
+    stanjeMape();
+    if(rocno) pokaziZavihek('nastavitve');
+    return false;
+  }
+  try{
+    const d = await dovoljenjeMape(rocno);
+    if(d !== 'granted'){
+      stanjeMape('dovoljenje'); trak(true);
+      if(rocno) toast('Brskalnik potrebuje dovoljenje za zapis v mapo.');
+      return false;
+    }
+    const bes = JSON.stringify(izvozniObjekt(), null, 2);
+    const naslednja = nastavitve.backupReza === 'A' ? 'B' : 'A';
+    const rezIme = 'fuzijska-biopsija-backup-' + naslednja + '.json';
+    await zapisiDat(rezIme, bes);
+    await preveriDatoteko(rezIme, true);
+    await zapisiDat('fuzijska-biopsija-zadnji.json', bes);
+    await preveriDatoteko('fuzijska-biopsija-zadnji.json', true);
+    const dnes = toISO(danes());
+    if(nastavitve.zadnjiZapisMape !== dnes){
+      const dnevna = 'fuzijska-biopsija-' + dnes + '.json';
+      await zapisiDat(dnevna, bes);
+      await preveriDatoteko(dnevna, true);
+      nastavitve.zadnjiZapisMape = dnes;
+    }
+    nastavitve.backupReza = naslednja;
+    nastavitve.zadnjiUspesenBackup = new Date().toISOString();
+    shraniNastavitve(true);
+    stanjeMape('ok'); trak(false);
+    if(rocno) toast('Kopija je zapisana in uspešno preverjena.');
+    return true;
+  }catch(e){
+    console.error('Napaka backupa:', e);
+    stanjeMape('napaka', e.message);
+    trak(false);
+    if(rocno) toast('Backup ni uspel. Preveri mapo in dovoljenja.');
+    return false;
+  }
+}
+async function preveriBackup(){
+  if(!mapa){ pokaziZavihek('nastavitve'); stanjeMape(); return; }
+  try{
+    const d = await dovoljenjeMape(true);
+    if(d !== 'granted'){ stanjeMape('dovoljenje'); trak(true); return; }
+    const kandidati = [
+      'fuzijska-biopsija-zadnji.json',
+      'fuzijska-biopsija-backup-' + nastavitve.backupReza + '.json',
+      'fuzijska-biopsija-backup-' + (nastavitve.backupReza === 'A' ? 'B' : 'A') + '.json'
+    ];
+    let zadnjaNapaka = null;
+    for(const ime of kandidati){
+      try{
+        const o = await preveriDatoteko(ime, false);
+        const ujema = JSON.stringify(o.pacienti) === JSON.stringify(pacienti);
+        const bes = 'Backup je veljaven.\n\nDatoteka: ' + ime +
+          '\nZapisano: ' + fmtCas(o.izvozeno) +
+          '\nPacientov v kopiji: ' + o.pacienti.length +
+          '\nPacientov v trenutni bazi: ' + pacienti.length +
+          '\nUjemanje: ' + (ujema ? 'DA' : 'NE — kopija je starejša ali drugačna');
+        alert(bes);
+        if(ujema) stanjeMape('ok');
+        else stanjeMape('neujemanje');
+        return;
+      }catch(e){ zadnjaNapaka = e; }
+    }
+    throw zadnjaNapaka || new Error('Nobene kopije ni mogoče prebrati.');
+  }catch(e){
+    console.error('Preverjanje backupa ni uspelo:', e);
+    stanjeMape('napaka', e.message);
+    alert('Backupa ni mogoče preveriti: ' + e.message);
+  }
+}
+async function izberiMapo(){
+  if(!window.showDirectoryPicker){
+    alert('Izbiro mape podpirata brskalnika Chrome in Edge. Uporabi dnevni prenos ali ročni izvoz.');
+    return;
+  }
+  try{
+    const novaMapa = await window.showDirectoryPicker({mode:'readwrite'});
+    mapa = novaMapa;
+    await shraniMapo(mapa);
+    await zapisiVMapo(true);
+  }catch(e){
+    if(e && e.name !== 'AbortError'){
+      console.error('Izbira mape ni uspela:', e);
+      stanjeMape('napaka', e.message);
+      toast('Izbira ali zapis v mapo ni uspel.');
+    }
+  }
+}
+function stanjeMape(st, podrobnost=''){
+  const el = $('#stanjeMape'), pill = $('#pillBackup');
+  if(!('showDirectoryPicker' in window)){
+    el.className = 'stanje slabo';
+    el.textContent = 'Ta brskalnik ne podpira samodejnega zapisa v mapo. Vklopi dnevni prenos ali uporabi ročni izvoz.';
+    pill.textContent = 'Backup: prenosi'; pill.className = 'pill';
+    return;
+  }
+  if(!mapa){
+    el.className = 'stanje';
+    el.textContent = 'Mapa za samodejni backup še ni izbrana.';
+    pill.textContent = 'Backup: izberi mapo'; pill.className = 'pill klik';
+    return;
+  }
+  if(st === 'dovoljenje'){
+    el.className = 'stanje slabo';
+    el.textContent = 'Mapa je izbrana, a brskalnik zahteva ponovno dovoljenje. Klikni »Zapiši v mapo zdaj« ali »Dovoli« v oranžnem traku.';
+    pill.textContent = 'Backup: potrdi dovoljenje'; pill.className = 'pill pozor klik';
+    return;
+  }
+  if(st === 'napaka'){
+    el.className = 'stanje slabo';
+    el.textContent = 'Zapis ali preverjanje backupa ni uspelo' + (podrobnost ? ': ' + podrobnost : '.');
+    pill.textContent = 'Backup: napaka'; pill.className = 'pill pozor klik';
+    return;
+  }
+  if(st === 'neujemanje'){
+    el.className = 'stanje slabo';
+    el.textContent = 'Backup je berljiv, vendar se ne ujema s trenutno bazo. Zapiši novo kopijo.';
+    pill.textContent = 'Backup: zastarel'; pill.className = 'pill pozor klik';
+    return;
+  }
+  if(backupStar()){
+    el.className = 'stanje slabo';
+    el.textContent = 'Mapa je izbrana, vendar je zadnji potrjeni backup star ali še ni bil uspešno preverjen. Zadnji uspešen zapis: ' + fmtCas(nastavitve.zadnjiUspesenBackup) + '.';
+    pill.textContent = 'Backup: preveri'; pill.className = 'pill pozor klik';
+    return;
+  }
+  el.className = 'stanje ok';
+  el.textContent = 'Samodejni backup deluje. Zadnji uspešen in prebran zapis: ' + fmtCas(nastavitve.zadnjiUspesenBackup) + '.';
+  pill.textContent = 'Backup ✓'; pill.className = 'pill ok klik';
+}
+function trak(pokazi){ $('#trak').classList.toggle('odprt', !!pokazi); }
+
+/* ═══ 9 · Prenosi, izvoz, uvoz ═══ */
+async function prenesi(vsebina, tip, ime){
+  if(JE_NAMIZNA){
+    try{
+      const koncnica = ime.toLowerCase().endsWith('.csv') ? 'csv' : (ime.toLowerCase().endsWith('.json') ? 'json' : 'txt');
+      const odgovor = await window.desktopApi.saveTextFile({
+        suggestedName:ime,
+        content:vsebina,
+        title:'Shrani ' + ime,
+        filters:[{name:koncnica.toUpperCase() + ' datoteka', extensions:[koncnica]}]
+      });
+      return odgovor || {canceled:true};
+    }catch(e){
+      alert('Datoteke ni bilo mogoče shraniti: ' + (e.message || 'neznana napaka'));
+      return {canceled:true, error:true};
+    }
+  }
+  const b = new Blob([vsebina], {type:tip});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = ime;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+  return {canceled:false};
+}
+async function izvoziJSON(){
+  const r = await prenesi(JSON.stringify(izvozniObjekt(), null, 2), 'application/json', 'fuzijska-biopsija-' + toISO(danes()) + '.json');
+  if(!r.canceled) toast('Datoteka JSON je shranjena.');
+}
+function csvVarno(v){
+  let c = String(v == null ? '' : v);
+  if(/^[=+\-@]/.test(c)) c = "'" + c;
+  return /[";\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+}
+async function izvoziCSV(){
+  const g = ['Priimek','Ime','Datum rojstva','Matični indeks','Telefon','MR ustanova','Datum vpisa','Status','Termin','Ura','Zaključeno','Opombe'];
+  const v = pacienti.map(p => [
+    p.priimek, p.ime, fmtCSVDate(p.datumRojstva), p.maticniIndeks, p.telefon || '',
+    p.mrUstanova || '', fmtCSVDate(p.datumVpisa), STAT[p.status] || p.status,
+    fmtCSVDate(p.terminDatum), p.terminUra || '', fmtCSVDate(p.datumZakljucka), p.opombe || ''
+  ]);
+  const csv = '\uFEFF' + [g].concat(v).map(r => r.map(csvVarno).join(';')).join('\r\n');
+  const r = await prenesi(csv, 'text/csv;charset=utf-8', 'fuzijska-biopsija-' + toISO(danes()) + '.csv');
+  if(!r.canceled) toast('Datoteka CSV je shranjena.');
+}
+function dnevniPrenos(){
+  if(JE_NAMIZNA) return;
+  if(!nastavitve.dnevniPrenos) return;
+  const dnes = toISO(danes());
+  if(nastavitve.zadnjiPrenos === dnes || !pacienti.length) return;
+  prenesi(JSON.stringify(izvozniObjekt(), null, 2), 'application/json', 'fuzijska-biopsija-' + dnes + '.json');
+  nastavitve.zadnjiPrenos = dnes;
+  shraniNastavitve(true);
+  namigPrenos();
+  toast('Dnevni prenos varnostne kopije je sprožen.');
+}
+function namigPrenos(){
+  $('#namigPrenos').textContent = nastavitve.zadnjiPrenos
+    ? 'Zadnji sproženi dnevni prenos: ' + fmtD(nastavitve.zadnjiPrenos) + '.'
+    : 'Dnevni prenos se sproži ob prvem odprtju aplikacije vsak dan.';
+}
+async function uvoziBesedilo(besedilo){
+  try{
+      const o = JSON.parse(besedilo);
+      const sez = Array.isArray(o) ? o : o.pacienti;
+      const preverjeni = preveriSeznam(sez, true);
+      if(!confirm('Uvoz bo nadomestil trenutni seznam (' + pacienti.length + ' zapisov) z ' + preverjeni.length + ' preverjenimi zapisi. Nadaljujem?')) return;
+      const predUvozom = await prenesi(
+        JSON.stringify(izvozniObjekt(), null, 2),
+        'application/json',
+        'fuzijska-biopsija-pred-uvozom-' + oznakaCasa() + '.json'
+      );
+      if(predUvozom.canceled && !confirm('Predhodna JSON kopija ni bila shranjena. Vseeno nadaljujem z uvozom?')) return;
+      const noveUstanove = o && o.nastavitve && Array.isArray(o.nastavitve.ustanove)
+        ? o.nastavitve.ustanove.map(x => varnoBesedilo(x, 200)).filter(Boolean)
+        : [];
+      const noviUrnik = o && o.nastavitve && o.nastavitve.urnik ? normalizirajUrnik(o.nastavitve.urnik) : null;
+      pacienti = preverjeni;
+      if(!shrani('uvoz datoteke')) return;
+      if(noveUstanove.length) nastavitve.ustanove = Array.from(new Set(nastavitve.ustanove.concat(noveUstanove))).sort((a,b) => a.localeCompare(b, 'sl'));
+      if(noviUrnik) nastavitve.urnik = noviUrnik;
+      if(noveUstanove.length || noviUrnik) shraniNastavitve(true);
+      napolniNastavitve();
+      renderUstanove();
+      toast('Podatki so preverjeni in uvoženi. Predhodna kopija je bila prenesena.');
+  }catch(e){
+    console.error('Napaka uvoza:', e);
+    alert('Uvoz je zavrnjen. ' + (e.message || 'Datoteka ni veljavna.'));
+  }
+}
+function uvozi(dat){
+  const br = new FileReader();
+  br.onerror = () => alert('Datoteke ni mogoče prebrati.');
+  br.onload = async () => uvoziBesedilo(br.result);
+  br.readAsText(dat);
+}
+
+function osveziNamiznoBazo(){
+  if(!JE_NAMIZNA) return;
+  document.body.classList.add('namizno');
+  const el = $('#desktopBazaStanje');
+  if(!el) return;
+  try{
+    const odgovor = window.desktopApi.getDiagnostics();
+    if(!odgovor || !odgovor.ok) throw napakaNamiznegaOdgovora(odgovor, 'Diagnostike ni mogoče prebrati.');
+    const d = odgovor.result;
+    const velikost = d.fileSize < 1024 * 1024
+      ? Math.max(1, Math.round(d.fileSize / 1024)) + ' KB'
+      : (d.fileSize / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+    el.className = 'stanje ok';
+    el.innerHTML = '<b>SQLite baza deluje.</b><br>' +
+      'Pacientov: ' + d.patientCount + ' · notranjih kopij: ' + d.backupCount +
+      ' · baza: ' + velikost + ' · različica aplikacije: ' + esc(d.appVersion) +
+      '<br><span style="font-size:12px">' + esc(d.databasePath) + '</span>';
+  }catch(e){
+    el.className = 'stanje slabo';
+    el.textContent = 'Diagnostike baze ni bilo mogoče prebrati: ' + (e.message || 'neznana napaka');
+  }
+}
+
+
+/* ═══ 9b · Samodejne GitHub posodobitve ═══ */
+function updateNapakaBesedilo(besedilo){
+  const v=String(besedilo||'').trim();
+  if(/404|not found/i.test(v)) return 'GitHub Release ni dosegljiv. Preveri, ali je repozitorij javen in ali je Release objavljen.';
+  if(/latest\.yml/i.test(v)) return 'V GitHub Release manjka datoteka latest.yml. Release mora biti izdelan s priloženim workflowom.';
+  if(/net::|ENOTFOUND|ETIMEDOUT|internet|network/i.test(v)) return 'Povezava z GitHubom ni uspela. Preveri internet in poskusi znova.';
+  return v || 'Preverjanje posodobitev ni uspelo.';
+}
+function renderUpdateStanje(stanje){
+  if(!JE_NAMIZNA || !$('#updateStanje')) return;
+  updateStanjePodatki=stanje||{};
+  const s=updateStanjePodatki;
+  const el=$('#updateStanje');
+  const proga=$('#updateProga');
+  const polnilo=proga?proga.querySelector('span'):null;
+  const pill=$('#pillUpdate');
+  let besedilo='', razred='stanje';
+  const pct=Math.max(0,Math.min(100,Number(s.progressPercent||0)));
+
+  if(s.status==='development'){
+    besedilo='Razvojni zagon ne preverja posodobitev. Funkcija deluje v nameščenem Setup.exe.';
+  }else if(s.status==='unsupported'){
+    besedilo='Samodejne posodobitve v tej namestitvi niso na voljo.'; razred+=' slabo';
+  }else if(s.status==='checking'){
+    besedilo='Preverjam GitHub Releases za novo različico …';
+  }else if(s.status==='available'){
+    besedilo='Na voljo je različica '+(s.availableVersion||'—')+'. Začenjam varen prenos v ozadju …'; razred+=' slabo';
+  }else if(s.status==='downloading'){
+    besedilo='Prenašam različico '+(s.availableVersion||'—')+': '+pct.toFixed(0)+' %'+(s.total?' · '+formatBajtov(s.transferred||0)+' / '+formatBajtov(s.total):'')+'.';
+  }else if(s.status==='downloaded'){
+    besedilo='Različica '+(s.availableVersion||'—')+' je prenesena. Zapri odprto delo in klikni »Znova zaženi in namesti«.'; razred+=' ok';
+  }else if(s.status==='installing'){
+    besedilo='Ustvarjam varnostno kopijo baze in zaganjam namestitev …';
+  }else if(s.status==='error'){
+    besedilo='Posodobitev ni uspela: '+updateNapakaBesedilo(s.error); razred+=' slabo';
+  }else if(s.status==='up-to-date'){
+    besedilo='Aplikacija je posodobljena. Nameščena različica: '+(s.currentVersion||'—')+'.'; razred+=' ok';
+  }else{
+    besedilo='Samodejno preverjanje posodobitev je pripravljeno. Nameščena različica: '+(s.currentVersion||'—')+'.';
+  }
+  el.className=razred; el.textContent=besedilo;
+
+  if(proga){
+    proga.classList.toggle('vidna',s.status==='downloading');
+    if(polnilo) polnilo.style.width=pct+'%';
+  }
+  if($('#appRazlicica')) $('#appRazlicica').textContent=s.currentVersion?'v'+s.currentVersion:'—';
+  const meta=[];
+  meta.push('<b>Nameščena različica:</b> '+esc(s.currentVersion||'—'));
+  if(s.availableVersion) meta.push('<b>Nova različica:</b> '+esc(s.availableVersion));
+  if(s.lastCheckedAt) meta.push('<b>Zadnje preverjanje:</b> '+esc(fmtCas(s.lastCheckedAt)));
+  if(s.releaseDate) meta.push('<b>Objavljeno:</b> '+esc(fmtCas(s.releaseDate)));
+  if(s.safetyBackupPath) meta.push('<b>Varnostna kopija baze:</b> '+esc(s.safetyBackupPath));
+  if(s.releaseNotes) meta.push('<br><b>Spremembe:</b> '+esc(s.releaseNotes));
+  $('#updateMeta').innerHTML=meta.join(' · ');
+
+  const zaseden=updateAkcijaPoteka||['checking','downloading','installing'].includes(s.status);
+  $('#gumbUpdatePreveri').disabled=zaseden;
+  $('#gumbUpdatePrenesi').disabled=updateAkcijaPoteka||s.status!=='available';
+  $('#gumbUpdateNamesti').disabled=updateAkcijaPoteka||s.status!=='downloaded';
+
+  if(pill){
+    if(s.status==='downloaded'){
+      pill.style.display=''; pill.className='pill pozor klik desktop-only'; pill.textContent='Posodobi na '+(s.availableVersion||'novo');
+      if(!updatePrenosSporocen){ updatePrenosSporocen=true; toast('Nova različica '+(s.availableVersion||'')+' je pripravljena za namestitev.'); }
+    }else if(s.status==='downloading'){
+      pill.style.display=''; pill.className='pill klik desktop-only'; pill.textContent='Posodobitev '+pct.toFixed(0)+' %';
+    }else if(s.status==='available'){
+      pill.style.display=''; pill.className='pill pozor klik desktop-only'; pill.textContent='Nova različica';
+    }else{
+      pill.style.display='none';
+    }
+  }
+}
+async function osveziUpdateStanje(){
+  if(!JE_NAMIZNA||!window.desktopApi.updatesGetStatus) return;
+  try{ renderUpdateStanje(await window.desktopApi.updatesGetStatus()); }
+  catch(e){ renderUpdateStanje({status:'error',error:e.message||'Stanja posodobitev ni mogoče prebrati.'}); }
+}
+async function updateAkcija(fn,uspeh){
+  if(updateAkcijaPoteka) return null;
+  updateAkcijaPoteka=true; renderUpdateStanje(updateStanjePodatki||{});
+  try{
+    const r=await fn();
+    if(r) renderUpdateStanje(r);
+    if(uspeh) toast(uspeh);
+    return r;
+  }catch(e){
+    console.error('Napaka posodobitve:',e);
+    alert('Dejanje s posodobitvijo ni uspelo.\n\n'+updateNapakaBesedilo(e.message));
+    await osveziUpdateStanje();
+    return null;
+  }finally{
+    updateAkcijaPoteka=false; renderUpdateStanje(updateStanjePodatki||{});
+  }
+}
+async function namestiPrenesenoPosodobitev(){
+  if(!updateStanjePodatki||updateStanjePodatki.status!=='downloaded') return;
+  if(!confirm('Namestim različico '+(updateStanjePodatki.availableVersion||'novo različico')+'?\n\nAplikacija bo ustvarila preverjeno kopijo SQLite baze, se zaprla in ponovno zagnala. DICOM in PDF dokumenti se ne spreminjajo.')) return;
+  await updateAkcija(()=>window.desktopApi.updatesInstall(),'Aplikacija se bo zdaj znova zagnala.');
+}
+
+
+/* ═══ 9b · Šifrirana Google Sheets kopija prek Apps Script ═══ */
+function cloudGumbOnemogoci(id, pogoj){ const el=$(id); if(el) el.disabled=!!pogoj; }
+function renderCloudStanje(stanje){
+  if(!JE_NAMIZNA || !$('#cloudStanje')) return;
+  cloudStanjePodatki = stanje || {};
+  const s = cloudStanjePodatki;
+  const el = $('#cloudStanje');
+  let besedilo = '', razred = 'stanje';
+  if(!s.secureStorageAvailable){
+    besedilo = 'Windows zaščiteno shranjevanje skrivnosti ni na voljo. Cloud backup je onemogočen.'; razred += ' slabo';
+  }else if(!s.endpointConfigured){
+    besedilo = 'Apps Script povezava še ni nastavljena. Vnesi Web App URL in dostopni ključ iz Google Sheeta.';
+  }else if(!s.connectionVerified){
+    besedilo = 'Povezava je vnesena, vendar še ni uspešno preverjena.'; razred += ' slabo';
+  }else if(s.existingBackupDetected && !s.backupConfigured){
+    besedilo = 'V Google Sheetu je najden obstoječi šifrirani backup. Vnesi obnovitveno geslo in klikni »Poveži obstoječi backup«.'; razred += ' slabo';
+  }else if(!s.backupConfigured){
+    besedilo = 'Apps Script povezava deluje. Vnesi novo obnovitveno geslo in ustvari šifrirani backup.';
+  }else if(s.syncing){
+    besedilo = 'Šifrirani backup se trenutno zapisuje in ponovno preverja …';
+  }else if(s.lastError){
+    besedilo = 'Zadnja sinhronizacija ni uspela: ' + s.lastError; razred += ' slabo';
+  }else if(s.pending){
+    besedilo = 'Lokalne spremembe so shranjene. Google Sheets kopija čaka na sinhronizacijo.'; razred += ' slabo';
+  }else{
+    besedilo = 'Šifrirana Google Sheets kopija deluje. Zadnja uspešna sinhronizacija: ' + fmtCas(s.lastSyncAt) + '.'; razred += ' ok';
+  }
+  el.className = razred;
+  el.textContent = besedilo;
+  $('#cloudMeta').innerHTML =
+    '<b>Google Sheet:</b> ' + esc(s.spreadsheetName || '—') +
+    ' · <b>Lokalno potrjena revizija:</b> ' + (s.lastSyncRevision || '—') +
+    ' · <b>Oddaljena revizija:</b> ' + (s.remoteRevision || '—') +
+    ' · <b>Oddaljena posodobitev:</b> ' + esc(fmtCas(s.remoteUpdatedAt));
+  if(s.endpointUrl && !$('#cloudUrl').value) $('#cloudUrl').value = s.endpointUrl;
+
+  const zaseden = cloudAkcijaPoteka;
+  cloudGumbOnemogoci('#gumbCloudNastavi', zaseden);
+  cloudGumbOnemogoci('#gumbCloudOsvezi', zaseden || !s.endpointConfigured);
+  cloudGumbOnemogoci('#gumbCloudUstvari', zaseden || !s.connectionVerified || s.existingBackupDetected || s.backupConfigured);
+  cloudGumbOnemogoci('#gumbCloudPriklopi', zaseden || !s.connectionVerified || !s.existingBackupDetected || s.backupConfigured);
+  cloudGumbOnemogoci('#gumbCloudSync', zaseden || !s.backupConfigured);
+  cloudGumbOnemogoci('#gumbCloudObnovi', zaseden || !s.backupConfigured);
+  cloudGumbOnemogoci('#gumbCloudOdpri', zaseden || !s.spreadsheetFound);
+  cloudGumbOnemogoci('#gumbCloudOdklopi', zaseden || !s.endpointConfigured);
+}
+async function osveziCloudStanje(){
+  if(!JE_NAMIZNA || !window.desktopApi.cloudGetStatus) return;
+  try{ renderCloudStanje(await window.desktopApi.cloudGetStatus()); }
+  catch(e){ renderCloudStanje({secureStorageAvailable:true,lastError:e.message || 'Stanja ni mogoče prebrati.'}); }
+}
+async function cloudAkcija(fn, uspeh){
+  if(cloudAkcijaPoteka) return null;
+  cloudAkcijaPoteka = true; renderCloudStanje(cloudStanjePodatki || {});
+  try{
+    const rezultat = await fn();
+    if(uspeh) toast(uspeh);
+    await osveziCloudStanje();
+    return rezultat;
+  }catch(e){
+    console.error('Cloud napaka:', e);
+    alert('Cloud dejanje ni uspelo.\n\n' + (e.message || 'Neznana napaka.'));
+    await osveziCloudStanje();
+    return null;
+  }finally{
+    cloudAkcijaPoteka = false; renderCloudStanje(cloudStanjePodatki || {});
+  }
+}
+function cloudGeslo(){
+  const a=$('#cloudGeslo').value, b=$('#cloudGeslo2').value;
+  if(a.length < 12) throw new Error('Obnovitveno geslo mora imeti najmanj 12 znakov.');
+  if(a !== b) throw new Error('Vneseni gesli se ne ujemata.');
+  return a;
+}
+function cloudPovezava(){
+  const endpointUrl=$('#cloudUrl').value.trim();
+  const authSecret=$('#cloudDostopniKljuc').value.trim();
+  if(!endpointUrl) throw new Error('Vnesi Apps Script Web App URL.');
+  if(authSecret.length < 32) throw new Error('Vnesi dostopni ključ iz Apps Scripta.');
+  return {endpointUrl, authSecret};
+}
+function pocistiCloudGeslo(){ $('#cloudGeslo').value=''; $('#cloudGeslo2').value=''; }
+async function ponovnoNaloziPoCloudObnovi(){
+  nalozi();
+  napolniNastavitve();
+  renderVse();
+  osveziNamiznoBazo();
+}
+
+/* ═══ 10 · Nastavitve ═══ */
+function preberiTerminFuzijIzVnosov(vir, preverjaj=true){
+  const q = sel => vir.querySelector(sel);
+  const datum = q('[data-u-datum]') ? q('[data-u-datum]').value : $('#uDatum').value;
+  const pacientov = Number(q('[data-u-pacientov]') ? q('[data-u-pacientov]').value : $('#uPacientov').value);
+  const zacetek = q('[data-u-zacetek]') ? q('[data-u-zacetek]').value : $('#uZacetek').value;
+  const konec = q('[data-u-konec]') ? q('[data-u-konec]').value : $('#uKonec').value;
+  const malicaOd = q('[data-u-malica-od]') ? q('[data-u-malica-od]').value : $('#uMalicaOd').value;
+  const malicaDo = q('[data-u-malica-do]') ? q('[data-u-malica-do]').value : $('#uMalicaDo').value;
+  const id = vir.dataset && vir.dataset.sejaId ? vir.dataset.sejaId : uid();
+  if(preverjaj){
+    if(!jeISO(datum)) throw new Error('Izberi veljaven datum fuzijskih biopsij.');
+    if(!veljavnaUra(zacetek) || !veljavnaUra(konec) || uraVMinute(konec) <= uraVMinute(zacetek)) throw new Error(fmtD(datum) + ': začetek in konec nista veljavna.');
+    if((malicaOd || malicaDo) && (!veljavnaUra(malicaOd) || !veljavnaUra(malicaDo) || uraVMinute(malicaDo) <= uraVMinute(malicaOd) || uraVMinute(malicaOd) < uraVMinute(zacetek) || uraVMinute(malicaDo) > uraVMinute(konec))) throw new Error(fmtD(datum) + ': malica mora biti v celoti znotraj delovnega časa.');
+    if(!Number.isInteger(pacientov) || pacientov < 1) throw new Error(fmtD(datum) + ': vnesi veljavno število pacientov.');
+  }
+  return {id, datum, zacetek, konec, pacientov:Number.isInteger(pacientov) && pacientov > 0 ? pacientov : 1, malicaOd, malicaDo};
+}
+function preveriTerminFuzij(seja, izkljuciId=''){
+  const max = suroviTerminiZaPravilo(seja).length;
+  if(!max) throw new Error(fmtD(seja.datum) + ': ni prostora za niti en 40-minutni termin.');
+  if(seja.pacientov > max) throw new Error(fmtD(seja.datum) + ': največje možno število 40-minutnih mest je ' + max + '.');
+  const dvojnik = nastavitve.urnik.termini.find(x => x.id !== izkljuciId && x.datum === seja.datum);
+  if(dvojnik) throw new Error('Za ' + fmtD(seja.datum) + ' je dan fuzij že dodan. Uredi obstoječega.');
+  return max;
+}
+function htmlUrnikKartice(seja){
+  const termini = terminiZaPravilo(seja);
+  const rezervirani = rezerviraniZaDatum(seja.datum);
+  const pretekel = seja.datum < toISO(danes());
+  const dan = izISO(seja.datum);
+  return '<article class="urnik-karta ' + (pretekel ? 'pretekel' : '') + '" data-urnik-vrstica data-seja-id="' + esc(seja.id) + '">' +
+    '<div class="urnik-glava"><div><div class="urnik-naslov">' + esc(IMENA_DNI[dan.getDay()]) + ', ' + fmtD(seja.datum) + '</div>' +
+    '<div class="urnik-podnaslov">' + (pretekel ? 'Pretekli dan fuzij' : 'Razpisani dan fuzij') + '</div></div>' +
+    '<span class="urnik-kapaciteta">' + rezervirani.length + '/' + termini.length + ' naročenih<br>' + Math.max(0, termini.length - rezervirani.length) + ' prostih</span></div>' +
+    '<div class="urnik-mreza">' +
+      '<div class="polje"><label>Datum</label><input data-u-datum type="date" value="' + seja.datum + '"></div>' +
+      '<div class="polje"><label>Pacientov</label><input data-u-pacientov type="number" min="1" step="1" value="' + seja.pacientov + '"></div>' +
+      '<div class="polje"><label>Začetek</label><input data-u-zacetek type="time" value="' + seja.zacetek + '"></div>' +
+      '<div class="polje"><label>Konec</label><input data-u-konec type="time" value="' + seja.konec + '"></div>' +
+      '<div class="polje"><label>Malica od</label><input data-u-malica-od type="time" value="' + seja.malicaOd + '"></div>' +
+      '<div class="polje"><label>Malica do</label><input data-u-malica-do type="time" value="' + seja.malicaDo + '"></div>' +
+    '</div>' +
+    '<div class="urnik-casi"><b>Termini:</b> ' + (termini.length ? termini.join(', ') : 'ni možnih terminov') + '</div>' +
+    '<div class="akcije"><button class="gumb drugi mali" data-a="urnikShrani">Shrani spremembe</button>' +
+    '<button class="gumb nevaren mali" data-a="urnikBrisi">Izbriši dan</button></div>' +
+  '</article>';
+}
+function terminiZaPravilo(pravilo){ return suroviTerminiZaPravilo(pravilo).slice(0, pravilo.pacientov); }
+function renderUrnikUrejevalnik(){
+  const danesISO = toISO(danes());
+  const seje = nastavitve.urnik.termini.slice().sort((a,b) => {
+    const ap = a.datum < danesISO, bp = b.datum < danesISO;
+    if(ap !== bp) return ap ? 1 : -1;
+    return ap ? b.datum.localeCompare(a.datum) : a.datum.localeCompare(b.datum);
+  });
+  $('#urnikDnevi').innerHTML = seje.length ? seje.map(htmlUrnikKartice).join('') : '<div class="prazno">Ni še razpisanega dne fuzijskih biopsij. Dodaj datum zgoraj.</div>';
+}
+function renderUrnikPovzetek(){
+  const danesISO = toISO(danes());
+  const prihodnji = nastavitve.urnik.termini.filter(x => x.datum >= danesISO);
+  const mesta = prihodnji.reduce((n,s) => n + terminiZaPravilo(s).length, 0);
+  const zasedeno = prihodnji.reduce((n,s) => n + rezerviraniZaDatum(s.datum).length, 0);
+  $('#urnikPovzetek').className = 'stanje ' + (prihodnji.length ? 'ok' : 'slabo');
+  $('#urnikPovzetek').textContent = prihodnji.length ? 'Prihodnji dnevi fuzij: ' + prihodnji.length + ' · zasedeno: ' + zasedeno + '/' + mesta + ' · prosto: ' + Math.max(0, mesta-zasedeno) + '.' : 'Ni razpisanega prihodnjega dne fuzijskih biopsij.';
+}
+function dodajTerminFuzij(){
+  try{
+    const seja = preberiTerminFuzijIzVnosov(document.createElement('div'), true);
+    preveriTerminFuzij(seja);
+    const prej = nastavitve.urnik;
+    nastavitve.urnik = normalizirajUrnik({termini:prej.termini.concat(seja)});
+    if(!shraniNastavitve()){ nastavitve.urnik = prej; return; }
+    planirajZapis(); renderUrnikUrejevalnik(); renderUrnikPovzetek(); renderStatistika();
+    toast('Dan fuzij ' + fmtD(seja.datum) + ' je dodan.');
+    $('#uDatum').value = '';
+  }catch(e){ alert(e.message || 'Dneva fuzij ni bilo mogoče dodati.'); }
+}
+function shraniTerminFuzij(karta){
+  try{
+    const stari = nastavitve.urnik.termini.find(x => x.id === karta.dataset.sejaId);
+    if(!stari) return;
+    const novi = preberiTerminFuzijIzVnosov(karta, true);
+    preveriTerminFuzij(novi, stari.id);
+    const rezervirani = rezerviraniZaDatum(stari.datum);
+    if(rezervirani.length && novi.datum !== stari.datum) throw new Error('Datuma ni mogoče spremeniti, ker so na ta dan že naročeni pacienti. Najprej jih prestavi.');
+    const noveUre = terminiZaPravilo(novi);
+    const neveljavni = rezervirani.filter(p => !noveUre.includes(p.terminUra));
+    if(neveljavni.length) throw new Error('Sprememba bi odstranila že zasedene termine (' + neveljavni.length + '). Najprej prestavi paciente ali razširi urnik.');
+    if(novi.pacientov < rezervirani.length) throw new Error('Število pacientov ne sme biti manjše od že naročenih (' + rezervirani.length + ').');
+    const prej = nastavitve.urnik;
+    nastavitve.urnik = normalizirajUrnik({termini:prej.termini.map(x => x.id === stari.id ? novi : x)});
+    if(!shraniNastavitve()){ nastavitve.urnik = prej; return; }
+    planirajZapis(); renderUrnikUrejevalnik(); renderUrnikPovzetek(); renderStatistika();
+    toast('Dan fuzij je posodobljen.');
+  }catch(e){ alert(e.message || 'Sprememb ni bilo mogoče shraniti.'); renderUrnikUrejevalnik(); }
+}
+function izbrisiTerminFuzij(karta){
+  const seja = nastavitve.urnik.termini.find(x => x.id === karta.dataset.sejaId);
+  if(!seja) return;
+  const rezervirani = rezerviraniZaDatum(seja.datum);
+  if(rezervirani.length){ alert('Tega dne ni mogoče izbrisati. Število naročenih pacientov: ' + rezervirani.length + '. Najprej jih prestavi ali odpovej.'); return; }
+  if(!confirm('Izbrišem dan fuzij ' + fmtD(seja.datum) + '?')) return;
+  const prej = nastavitve.urnik;
+  nastavitve.urnik = normalizirajUrnik({termini:prej.termini.filter(x => x.id !== seja.id)});
+  if(!shraniNastavitve()){ nastavitve.urnik = prej; return; }
+  planirajZapis(); renderUrnikUrejevalnik(); renderUrnikPovzetek(); renderStatistika();
+  toast('Dan fuzij je izbrisan.');
+}
+
+function napolniNastavitve(){
+  $('#uDatum').min = toISO(danes());
+  $('#kljDnevni').checked = !!nastavitve.dnevniPrenos;
+  renderUrnikUrejevalnik();
+  renderUrnikPovzetek();
+  namigPrenos();
+  renderUstanove();
+}
+
+/* ═══ 11 · PIN zaklep ═══ */
+function zakleni(){
+  if(!nastavitve.pin) return;
+  $('#pinZastor').classList.add('odprt');
+  $('#pinVnos').value = '';
+  $('#pinNapaka').textContent = '';
+  setTimeout(() => $('#pinVnos').focus(), 60);
+}
+function odkleni(){
+  if($('#pinVnos').value === nastavitve.pin){
+    $('#pinZastor').classList.remove('odprt');
+  }else{
+    $('#pinNapaka').textContent = 'Napačen PIN. Poskusi znova.';
+    $('#pinVnos').value = '';
+    $('#pinVnos').focus();
+  }
+}
+function posodobiZakleni(){ $('#gumbZakleni').style.display = nastavitve.pin ? '' : 'none'; }
+
+/* ═══ 12 · Zavihki in zagon ═══ */
+function pokaziZavihek(id){
+  document.querySelectorAll('.zav').forEach(b => b.classList.toggle('aktiven', b.dataset.tab === id));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('aktiven', s.id === 'tab-' + id));
+  if(id === 'statistika') renderStatistika();
+}
+
+async function init(){
+  if(JE_NAMIZNA) document.body.classList.add('namizno');
+  nalozi();
+  napolniNastavitve();
+  renderVse();
+  osveziNamiznoBazo();
+  if(JE_NAMIZNA){ osveziDokumentShrambo(); osveziIzvozZgodovino(); osveziUpdateStanje(); }
+  posodobiZakleni();
+  zakleni();
+
+  document.querySelectorAll('.zav').forEach(b => b.addEventListener('click', () => pokaziZavihek(b.dataset.tab)));
+  [['#iskCak', renderCakalni], ['#iskNar', renderNaroceni], ['#iskArh', renderArhiv]]
+    .forEach(par => $(par[0]).addEventListener('input', par[1]));
+  [['#filCak', renderCakalni], ['#filNar', renderNaroceni], ['#filArh', renderArhiv]]
+    .forEach(par => $(par[0]).addEventListener('change', par[1]));
+
+  if(JE_NAMIZNA){
+    $('#sezCak').addEventListener('change', e => {
+      const klj=e.target.closest('.izbor-kljuka'); if(!klj) return;
+      if(klj.checked) izbraniPacienti.add(klj.dataset.id); else izbraniPacienti.delete(klj.dataset.id);
+      osveziMnozicnoVrstico();
+    });
+    $('#gumbIzberiVidne').addEventListener('click', () => {
+      document.querySelectorAll('#sezCak .izbor-kljuka').forEach(x=>izbraniPacienti.add(x.dataset.id));
+      renderCakalni();
+    });
+    $('#gumbPocistiIzbor').addEventListener('click', () => { izbraniPacienti.clear(); renderCakalni(); });
+    $('#gumbNarociIzbrane').addEventListener('click', odpriMnozicnoNarocanje);
+    $('#gumbMnPreklic').addEventListener('click', () => $('#zastorMnozicno').classList.remove('odprt'));
+    $('#gumbMnPotrdi').addEventListener('click', potrdiMnozicnoNarocanje);
+    $('#mnDatum').addEventListener('change', mnozicniDatumPovzetek);
+    $('#mnSeznam').addEventListener('click', e => { const g=e.target.closest('[data-mn-a]'); const r=e.target.closest('[data-mn-id]'); if(g&&r) premakniMnozicnega(r.dataset.mnId,g.dataset.mnA); });
+    $('#gumbIzvozZapri').addEventListener('click', () => { if(!izvozPoteka) $('#zastorIzvoz').classList.remove('odprt'); });
+    $('#gumbIzvozZacni').addEventListener('click', zacniIzvoz);
+    $('#gumbIzvozPreklici').addEventListener('click', () => window.desktopApi.exportsCancel());
+    $('#gumbIzvozOdpri').addEventListener('click', () => izvozCiljnaMapa&&window.desktopApi.exportsOpenFolder(izvozCiljnaMapa));
+    $('#izvozZgodovina').addEventListener('click', e => { const g=e.target.closest('[data-izvoz-pot]'); if(g) window.desktopApi.exportsOpenFolder(g.dataset.izvozPot); });
+    if(window.desktopApi.onExportsProgress) window.desktopApi.onExportsProgress(prikaziIzvozNapredek);
+  }
+
+  $('#gumbNov').addEventListener('click', () => odpriObrazec(null));
+  $('#gumbPacShrani').addEventListener('click', shraniPacienta);
+  $('#gumbPacPreklic').addEventListener('click', zapriObrazce);
+  $('#gumbTerShrani').addEventListener('click', shraniTermin);
+  $('#gumbTerPreklic').addEventListener('click', zapriObrazce);
+  if(JE_NAMIZNA){
+    $('#gumbDokZapri').addEventListener('click', () => $('#zastorDokumenti').classList.remove('odprt'));
+    $('#gumbDodajDicom').addEventListener('click', uvoziDicom);
+    $('#gumbDodajPdf').addEventListener('click', uvoziPdf);
+    $('#gumbOdpriPacMapo').addEventListener('click', () => dokumentiPacientId && window.desktopApi.documentsOpenPatientFolder(dokumentiPacientId));
+    $('#dokSeznam').addEventListener('click', async e => {
+      const g=e.target.closest('[data-dok-a]'); if(!g||dokumentiAkcijaPoteka) return;
+      const assetId=g.dataset.assetId;
+      try{
+        if(g.dataset.dokA==='odpri') await window.desktopApi.documentsOpenAsset(assetId);
+        if(g.dataset.dokA==='pokazi') await window.desktopApi.documentsRevealAsset(assetId);
+        if(g.dataset.dokA==='izbrisi'){
+          const vrsta=g.dataset.kind==='dicom'?'celotno DICOM mapo':'PDF-izvid';
+          if(!confirm('Trajno izbrišem '+vrsta+' z diska?\n\nTega ni mogoče razveljaviti.')) return;
+          nastaviDokumentGumbe(true);
+          await window.desktopApi.documentsDeleteAsset(assetId);
+          await poDokumentAkciji({canceled:false},'Dokument je izbrisan z diska.');
+        }
+      }catch(err){ alert('Dejanje z dokumentom ni uspelo.\n\n'+(err.message||'Neznana napaka.')); }
+      finally{ nastaviDokumentGumbe(false); }
+    });
+    if(window.desktopApi.onDocumentsProgress) window.desktopApi.onDocumentsProgress(pokaziDokNapredek);
+  }
+  $('#gumbPrviProsti').addEventListener('click', nastaviPrviProsti);
+  $('#tDatum').addEventListener('change', () => osveziTerminskeUre());
+  $('#gumbDodajUrnik').addEventListener('click', dodajTerminFuzij);
+  $('#urnikDnevi').addEventListener('click', e => {
+    const g = e.target.closest('[data-a]');
+    const karta = e.target.closest('[data-urnik-vrstica]');
+    if(!g || !karta) return;
+    if(g.dataset.a === 'urnikShrani') shraniTerminFuzij(karta);
+    if(g.dataset.a === 'urnikBrisi') izbrisiTerminFuzij(karta);
+  });
+  $('#statOd').addEventListener('change', renderStatistika);
+  $('#statDo').addEventListener('change', renderStatistika);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') zapriObrazce(); });
+
+  $('#gumbUstanova').addEventListener('click', dodajUstanovo);
+  $('#polUstanova').addEventListener('keydown', e => { if(e.key === 'Enter') dodajUstanovo(); });
+
+  $('#kljDnevni').addEventListener('change', () => {
+    const prej = nastavitve.dnevniPrenos;
+    nastavitve.dnevniPrenos = $('#kljDnevni').checked;
+    if(!shraniNastavitve()){
+      nastavitve.dnevniPrenos = prej;
+      $('#kljDnevni').checked = prej;
+      return;
+    }
+    if(nastavitve.dnevniPrenos) dnevniPrenos();
+  });
+  $('#gumbMapa').addEventListener('click', izberiMapo);
+  $('#gumbZapisi').addEventListener('click', () => zapisiVMapo(true));
+  $('#gumbPreveri').addEventListener('click', preveriBackup);
+  $('#gumbTrak').addEventListener('click', () => zapisiVMapo(true));
+  $('#pillBackup').addEventListener('click', () => { if(!mapa) pokaziZavihek('nastavitve'); else zapisiVMapo(true); });
+  $('#gumbJson').addEventListener('click', izvoziJSON);
+  $('#gumbCsv').addEventListener('click', izvoziCSV);
+  $('#gumbUvoz').addEventListener('click', async () => {
+    if(JE_NAMIZNA){
+      try{
+        const r = await window.desktopApi.openJsonFile();
+        if(!r || r.canceled) return;
+        await uvoziBesedilo(r.content);
+      }catch(e){ alert('Datoteke ni mogoče odpreti: ' + (e.message || 'neznana napaka')); }
+    }else $('#dtUvoz').click();
+  });
+  if(JE_NAMIZNA){
+    $('#gumbUpdatePreveri').addEventListener('click', () => updateAkcija(() => window.desktopApi.updatesCheck()));
+    $('#gumbUpdatePrenesi').addEventListener('click', () => updateAkcija(() => window.desktopApi.updatesDownload()));
+    $('#gumbUpdateNamesti').addEventListener('click', namestiPrenesenoPosodobitev);
+    $('#gumbUpdateKopije').addEventListener('click', () => window.desktopApi.updatesOpenBackupsFolder());
+    $('#pillUpdate').addEventListener('click', () => {
+      if(updateStanjePodatki&&updateStanjePodatki.status==='downloaded') namestiPrenesenoPosodobitev();
+      else { pokaziZavihek('nastavitve'); document.getElementById('updatePlosca')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+    });
+    if(window.desktopApi.onUpdateStatus) window.desktopApi.onUpdateStatus(renderUpdateStanje);
+    $('#gumbOdpriPodatke').addEventListener('click', () => window.desktopApi.openDataFolder());
+    $('#gumbOdpriDnevnike').addEventListener('click', () => window.desktopApi.openLogsFolder());
+    $('#gumbDokOdpriMapo').addEventListener('click', () => window.desktopApi.documentsOpenRoot());
+    $('#gumbDokIzberiMapo').addEventListener('click', async () => {
+      if(dokumentiShramba&&Number(dokumentiShramba.assetCount||0)>0 && !confirm('Sprememba glavne mape ne bo premaknila že shranjenih dokumentov. Novi dokumenti se bodo shranjevali v novo mapo. Nadaljujem?')) return;
+      try{ const r=await window.desktopApi.documentsChooseRoot(); if(r&&!r.canceled){ await osveziDokumentShrambo(); toast('Nova glavna mapa dokumentov je nastavljena.'); } }
+      catch(e){ alert('Mape ni mogoče nastaviti: '+(e.message||'neznana napaka')); }
+    });
+    $('#gumbCloudNastavi').addEventListener('click', async () => {
+      try{
+        const p=cloudPovezava();
+        const r=await cloudAkcija(() => window.desktopApi.cloudConfigureAppScript(p.endpointUrl, p.authSecret), 'Apps Script povezava je preverjena.');
+        if(r){
+          $('#cloudDostopniKljuc').value='';
+          if(r.existingBackup) toast('Najden je obstoječi šifrirani backup. Vnesi obnovitveno geslo.');
+        }
+      }catch(e){ alert(e.message); }
+    });
+    $('#gumbCloudUstvari').addEventListener('click', async () => {
+      try{
+        const geslo=cloudGeslo();
+        const r=await cloudAkcija(() => window.desktopApi.cloudCreateBackup(geslo), 'Šifrirani Google Sheets backup je ustvarjen in preverjen.');
+        if(r) pocistiCloudGeslo();
+      }catch(e){ alert(e.message); }
+    });
+    $('#gumbCloudPriklopi').addEventListener('click', async () => {
+      try{
+        const geslo=cloudGeslo();
+        const r=await cloudAkcija(() => window.desktopApi.cloudAttachExisting(geslo), 'Obstoječi šifrirani backup je uspešno preverjen.');
+        if(r) pocistiCloudGeslo();
+      }catch(e){ alert(e.message); }
+    });
+    $('#gumbCloudSync').addEventListener('click', () => cloudAkcija(() => window.desktopApi.cloudSyncNow(), 'Google Sheets kopija je posodobljena in preverjena.'));
+    $('#gumbCloudOsvezi').addEventListener('click', async () => {
+      const preveri = cloudStanjePodatki && cloudStanjePodatki.backupConfigured;
+      const r = await cloudAkcija(
+        () => preveri ? window.desktopApi.cloudVerify() : window.desktopApi.cloudRefreshStatus(),
+        preveri ? '' : 'Apps Script povezava je preverjena.'
+      );
+      if(r && r.valid) toast('Cloud backup je veljaven: ' + r.patientCount + ' pacientov · revizija ' + r.revision + '.');
+    });
+    $('#gumbCloudOdpri').addEventListener('click', () => cloudAkcija(() => window.desktopApi.cloudOpenSheet()));
+    $('#gumbCloudObnovi').addEventListener('click', async () => {
+      if(!confirm('Obnovim lokalni seznam iz šifrirane Google Sheets kopije?\n\nTrenutno lokalno stanje bo pred zamenjavo shranjeno med notranje kopije. DICOM in PDF datoteke se ne spreminjajo.')) return;
+      const r=await cloudAkcija(() => window.desktopApi.cloudRestore(), 'Lokalni seznam je obnovljen iz clouda.');
+      if(r) await ponovnoNaloziPoCloudObnovi();
+    });
+    $('#gumbCloudOdklopi').addEventListener('click', async () => {
+      if(!confirm('Odklopim Apps Script povezavo?\n\nGoogle Sheet se ne izbriše. Samodejna sinhronizacija se ustavi, dokler povezave ponovno ne nastaviš.')) return;
+      await cloudAkcija(() => window.desktopApi.cloudDisconnect(), 'Apps Script povezava je odstranjena iz tega računalnika.');
+      $('#cloudUrl').value=''; $('#cloudDostopniKljuc').value='';
+    });
+    if(window.desktopApi.onCloudStatus) window.desktopApi.onCloudStatus(renderCloudStanje);
+    osveziCloudStanje();
+  }
+  $('#dtUvoz').addEventListener('change', e => {
+    if(e.target.files[0]) uvozi(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  $('#gumbPinNastavi').addEventListener('click', () => {
+    const v = $('#pinNov').value.trim();
+    if(!/^\d{4,8}$/.test(v)){ alert('PIN naj ima 4 do 8 številk.'); return; }
+    const prej = nastavitve.pin;
+    nastavitve.pin = v;
+    if(!shraniNastavitve()){ nastavitve.pin = prej; return; }
+    $('#pinNov').value = '';
+    posodobiZakleni();
+    toast('PIN je nastavljen.');
+  });
+  $('#gumbPinOdstrani').addEventListener('click', () => {
+    if(!nastavitve.pin){ toast('PIN ni nastavljen.'); return; }
+    if(confirm('Odstranim PIN zaklep?')){
+      const prej = nastavitve.pin;
+      nastavitve.pin = '';
+      if(!shraniNastavitve()){ nastavitve.pin = prej; return; }
+      posodobiZakleni();
+      toast('PIN je odstranjen.');
+    }
+  });
+  $('#gumbZakleni').addEventListener('click', zakleni);
+  $('#gumbOdkleni').addEventListener('click', odkleni);
+  $('#pinVnos').addEventListener('keydown', e => { if(e.key === 'Enter') odkleni(); });
+
+  if(!JE_NAMIZNA){
+    mapa = await naloziMapo();
+    if(mapa){
+      const d = mapa.queryPermission ? await mapa.queryPermission({mode:'readwrite'}) : 'prompt';
+      if(d === 'granted') await zapisiVMapo(false);
+      else { stanjeMape('dovoljenje'); trak(true); }
+    }else stanjeMape();
+  }
+
+  if(!JE_NAMIZNA) window.addEventListener('storage', e => {
+    if(e.key === LS_P || e.key === LS_R){
+      const novaRev = Number(localStorage.getItem(LS_R) || 0);
+      if(novaRev !== revizija){
+        nalozi();
+        renderVse();
+        toast('Podatki so bili osveženi iz drugega zavihka.');
+      }
+    }
+  });
+
+  dnevniPrenos();
+
+  if(!JE_NAMIZNA && 'serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker ni registriran:', e));
+  }
+}
+init();
+</script>
+</body>
+</html>

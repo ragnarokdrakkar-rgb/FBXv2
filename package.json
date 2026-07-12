@@ -1,0 +1,67 @@
+{
+  "name": "fuzijska-biopsija-desktop",
+  "version": "1.4.1",
+  "description": "Lokalna Windows aplikacija za evidenco, DICOM/PDF dokumente, množično naročanje, preverjen USB prenos in samodejne GitHub posodobitve.",
+  "main": "src/main/main.cjs",
+  "author": "Kemal Jazavac",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node scripts/smoke-test.cjs && node scripts/database-backup-test.cjs && node scripts/migration-v2-test.cjs && node scripts/document-manager-test.cjs && node scripts/export-manager-test.cjs && node scripts/cloud-crypto-test.cjs && node scripts/cloud-manager-test.cjs && node scripts/update-manager-test.cjs && node scripts/build-config-test.cjs && node scripts/validate-renderer.cjs && node scripts/validate-apps-script.cjs",
+    "pack:win": "node scripts/build-windows.cjs --dir",
+    "dist:win": "node scripts/build-windows.cjs"
+  },
+  "devDependencies": {
+    "electron": "43.1.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "si.kemal.fuzijskabiopsija",
+    "productName": "Fuzijska biopsija",
+    "copyright": "Copyright © 2026 Kemal Jazavac",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Fuzijska-biopsija-Setup-${version}.${ext}",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Fuzijska biopsija",
+      "uninstallDisplayName": "Fuzijska biopsija",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "electronUpdaterCompatibility": ">=2.16"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.1"
+  }
+}
