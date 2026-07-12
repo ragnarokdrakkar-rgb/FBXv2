@@ -262,6 +262,7 @@ function registerIpc() {
     return { opened: true };
   });
   ipcMain.handle('documents:delete-asset', async (_event, assetId) => documentManager.deleteAsset(String(assetId || '')));
+  ipcMain.handle('documents:delete-patient', async (_event, patientId) => documentManager.deletePatientDocuments(String(patientId || '')));
 
   ipcMain.handle('exports:prepare', async (_event, appointmentDate) => exportManager.prepare(String(appointmentDate || '')));
   ipcMain.handle('exports:choose-and-start', async (_event, payload = {}) => {

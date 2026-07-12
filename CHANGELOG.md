@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.6.0
+
+- gumb **Opravil FB** odpre izbiro pozitivnega ali negativnega rezultata,
+- oba rezultata pacienta premakneta v arhiv,
+- pozitiven rezultat po dodatni potrditvi trajno izbriše DICOM in MR PDF,
+- negativen rezultat dokumente ohrani,
+- arhiv jasno pokaže rezultat in stanje dokumentov,
+- neuspešen ali delni izbris je mogoče ponoviti,
+- rezultat in brisanje se zapišeta v zgodovino pacienta,
+- CSV izvoz vsebuje rezultat FB in podatek o izbrisu dokumentov.
+
+
 ## 1.5.0
 
 - nov zavihek Priprava dneva s pregledom naročenih, pripravljenih in manjkajočih dokumentov,

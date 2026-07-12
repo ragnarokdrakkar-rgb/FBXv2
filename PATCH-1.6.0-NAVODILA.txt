@@ -1,0 +1,14 @@
+FBX UPDATE 1.6.0
+================
+
+1. npm test
+2. 2-zazeni.bat
+3. Rocno testiraj pozitiven in negativen rezultat.
+4. git status
+5. git add .
+6. git commit -m "Verzija 1.6.0 - rezultat FB in arhiv dokumentov"
+7. git push origin main
+8. git tag v1.6.0
+9. git push origin v1.6.0
+
+V GitHub Releaseu preveri Setup.exe, blockmap in latest.yml.

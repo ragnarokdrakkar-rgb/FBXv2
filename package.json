@@ -1,7 +1,7 @@
 {
   "name": "fuzijska-biopsija-desktop",
-  "version": "1.5.0",
-  "description": "Lokalna Windows aplikacija za evidenco, DICOM/PDF dokumente, množično naročanje, preverjen USB prenos in samodejne GitHub posodobitve.",
+  "version": "1.6.0",
+  "description": "Lokalna Windows aplikacija za evidenco, DICOM/PDF dokumente, rezultate fuzijske biopsije, arhiviranje, množično naročanje, preverjen USB prenos in samodejne GitHub posodobitve.",
   "main": "src/main/main.cjs",
   "author": "Kemal Jazavac",
   "license": "UNLICENSED",
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "test": "node scripts/smoke-test.cjs && node scripts/database-backup-test.cjs && node scripts/migration-v2-test.cjs && node scripts/document-manager-test.cjs && node scripts/phase6-test.cjs && node scripts/export-manager-test.cjs && node scripts/cloud-crypto-test.cjs && node scripts/cloud-manager-test.cjs && node scripts/update-manager-test.cjs && node scripts/build-config-test.cjs && node scripts/validate-renderer.cjs && node scripts/validate-apps-script.cjs",
+    "test": "node scripts/smoke-test.cjs && node scripts/database-backup-test.cjs && node scripts/migration-v2-test.cjs && node scripts/document-manager-test.cjs && node scripts/phase6-test.cjs && node scripts/phase7-result-archive-test.cjs && node scripts/export-manager-test.cjs && node scripts/cloud-crypto-test.cjs && node scripts/cloud-manager-test.cjs && node scripts/update-manager-test.cjs && node scripts/build-config-test.cjs && node scripts/validate-renderer.cjs && node scripts/validate-apps-script.cjs",
     "pack:win": "node scripts/build-windows.cjs --dir",
     "dist:win": "node scripts/build-windows.cjs"
   },

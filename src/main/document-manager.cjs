@@ -585,6 +585,90 @@ class DocumentManager {
     return { deleted: true, patientId: asset.patientId, assets: this.getPatientAssets(asset.patientId), summary: this.getSummary()[asset.patientId] || {} };
   }
 
+  async deletePatientDocuments(patientId) {
+    const patient = this.getPatient(patientId);
+    const assets = this.getPatientAssets(patient.id);
+    if (this.activePatients.has(patient.id)) {
+      throw new Error('Za tega pacienta trenutno poteka drugo delo z dokumenti. Počakaj, da se konča.');
+    }
+
+    for (const asset of assets) {
+      const storedPath = path.resolve(asset.storedPath);
+      if (!this.isManagedPath(storedPath)) {
+        throw new Error('Vsaj en dokument je izven znanih map shrambe. Zaradi varnosti avtomatsko brisanje ni dovoljeno.');
+      }
+    }
+
+    this.beginPatientOperation(patient.id);
+    const errors = [];
+    let deletedCount = 0;
+    let deletedBytes = 0;
+    const cleanupFolders = new Set();
+
+    const removeIfEmpty = async (folderPath) => {
+      try {
+        if (!this.isManagedPath(folderPath)) return;
+        const entries = await fs.promises.readdir(folderPath);
+        if (!entries.length) await fs.promises.rmdir(folderPath);
+      } catch {}
+    };
+
+    try {
+      for (const asset of assets) {
+        const storedPath = path.resolve(asset.storedPath);
+        try {
+          await fs.promises.rm(storedPath, {
+            recursive: asset.kind === 'dicom',
+            force: true,
+          });
+          this.database.deletePatientAsset(asset.id);
+          deletedCount += 1;
+          deletedBytes += Number(asset.totalBytes || 0);
+
+          if (asset.kind === 'mr_pdf') {
+            cleanupFolders.add(path.dirname(storedPath));
+            cleanupFolders.add(path.dirname(path.dirname(storedPath)));
+          } else {
+            cleanupFolders.add(path.dirname(storedPath));
+          }
+        } catch (error) {
+          errors.push({
+            assetId: asset.id,
+            kind: asset.kind,
+            storedPath,
+            message: error.message || String(error),
+          });
+        }
+      }
+
+      const folders = Array.from(cleanupFolders).sort((a, b) => b.length - a.length);
+      for (const folder of folders) await removeIfEmpty(folder);
+
+      const complete = errors.length === 0;
+      this.database.recordPatientEvent(
+        patient.id,
+        complete ? 'positive_documents_deleted' : 'positive_documents_delete_partial',
+        complete
+          ? 'Vsi DICOM in MR dokumenti izbrisani po pozitivnem rezultatu'
+          : 'Brisanje dokumentov po pozitivnem rezultatu ni bilo popolno',
+        { deletedCount, deletedBytes, errorCount: errors.length },
+      );
+
+      return {
+        complete,
+        patientId: patient.id,
+        deletedCount,
+        deletedBytes,
+        errorCount: errors.length,
+        errors,
+        remainingAssets: this.getPatientAssets(patient.id),
+        summary: this.getSummary()[patient.id] || {},
+      };
+    } finally {
+      this.endPatientOperation(patient.id);
+    }
+  }
+
   resolveAsset(assetId) {
     const asset = this.database.getPatientAsset(String(assetId || ''));
     if (!asset) throw new Error('Dokument ne obstaja več.');

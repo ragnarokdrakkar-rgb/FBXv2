@@ -1,0 +1,28 @@
+FBX PATCH 1.6.0
+================
+
+Vsebino tega ZIP-a kopiraj v korensko mapo projekta FBXv2, kjer je package.json.
+
+Nato dvoklikni:
+
+    UPORABI-UPDATE-1.6.0.bat
+
+Patch je namenjen samo trenutni različici 1.5.0. Pred spremembo sam izdela varnostno kopijo vseh spremenjenih datotek v mapi:
+
+    .v1.6.0-backup-<datum>
+
+Po uporabi zaženi:
+
+    npm test
+    2-zazeni.bat
+
+Nato ročno testiraj:
+- Opravil FB -> Pozitivna: pacient v arhivu, DICOM/PDF izbrisani.
+- Opravil FB -> Negativna: pacient v arhivu, DICOM/PDF ostaneta.
+
+Release:
+    git add .
+    git commit -m "Verzija 1.6.0 - rezultat FB in arhiv dokumentov"
+    git push origin main
+    git tag v1.6.0
+    git push origin v1.6.0

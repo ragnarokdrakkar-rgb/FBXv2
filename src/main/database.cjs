@@ -492,6 +492,28 @@ class AppDatabase {
         }, timestamp);
       }
 
+      const oldResult = String(old.rezultatBiopsije || '');
+      const newResult = String(patient.rezultatBiopsije || '');
+      if (oldResult !== newResult) {
+        const resultTitle = newResult === 'pozitivna'
+          ? 'Rezultat biopsije: pozitiven'
+          : newResult === 'negativna'
+            ? 'Rezultat biopsije: negativen'
+            : 'Rezultat biopsije odstranjen';
+        this.#insertPatientEvent(id, 'biopsy_result', resultTitle, {
+          from: oldResult,
+          to: newResult,
+          resultDate: patient.datumRezultataBiopsije || patient.datumZakljucka || '',
+        }, timestamp);
+      }
+
+      if (!old.dokumentiIzbrisaniPoPozitivnem && patient.dokumentiIzbrisaniPoPozitivnem) {
+        this.#insertPatientEvent(id, 'positive_documents_deleted', 'DICOM in MR izvid izbrisana po pozitivnem rezultatu', {
+          deletedAt: patient.datumIzbrisaDokumentov || '',
+          deletedCount: Number(patient.steviloIzbrisanihDokumentov || 0),
+        }, timestamp);
+      }
+
       const oldAppointment = `${old.terminDatum || ''}|${old.terminUra || ''}`;
       const newAppointment = `${patient.terminDatum || ''}|${patient.terminUra || ''}`;
       if (oldAppointment !== newAppointment) {
@@ -556,6 +578,17 @@ class AppDatabase {
       title: row.title,
       details: parseJson(row.details_json || '{}', {}),
     }));
+  }
+
+  recordPatientEvent(patientId, eventType, title, details = {}) {
+    return this.#transaction(() => {
+      this.#insertPatientEvent(patientId, eventType, title, details);
+      this.#insertAudit('patient_event_recorded', {
+        patientId: asText(patientId, 100),
+        eventType: asText(eventType, 100),
+      });
+      return { recorded: true };
+    });
   }
 
   #insertAudit(action, details) {

@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('desktopApi', Object.freeze({
   documentsRevealAsset: (assetId) => ipcRenderer.invoke('documents:reveal-asset', assetId),
   documentsOpenPatientFolder: (patientId) => ipcRenderer.invoke('documents:open-patient-folder', patientId),
   documentsDeleteAsset: (assetId) => ipcRenderer.invoke('documents:delete-asset', assetId),
+  documentsDeletePatient: (patientId) => ipcRenderer.invoke('documents:delete-patient', patientId),
   exportsPrepare: (appointmentDate) => ipcRenderer.invoke('exports:prepare', appointmentDate),
   exportsChooseAndStart: (appointmentDate, allowMissing) => ipcRenderer.invoke('exports:choose-and-start', { appointmentDate, allowMissing }),
   exportsCancel: () => ipcRenderer.invoke('exports:cancel'),

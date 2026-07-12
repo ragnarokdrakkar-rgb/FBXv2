@@ -1,4 +1,4 @@
-# Fuzijska biopsija Desktop 1.5.0
+# Fuzijska biopsija Desktop 1.6.0
 
 Lokalna Windows aplikacija za čakalni seznam, razpisane dneve fuzij, DICOM/PDF dokumente, množično naročanje, preverjen USB-prenos, šifrirano Google Sheets kopijo in GitHub samodejne posodobitve.
 
@@ -60,3 +60,10 @@ Podrobnosti in postopek prenosa na službeni računalnik:
 ```text
 docs\FAZA-6-STABILNOST-IN-PRENOS.md
 ```
+
+
+## Rezultat biopsije in arhiv
+
+Gumb **Opravil FB** omogoča izbiro pozitivnega ali negativnega rezultata. Pozitiven rezultat izbriše DICOM/PDF po dodatni potrditvi, negativen pa dokumente ohrani.
+
+Podrobnosti: `docs/FAZA-7-REZULTAT-IN-ARHIV.md`.

@@ -95,6 +95,18 @@ select.filter{border:1px solid var(--crta);border-radius:10px;padding:9px 10px;b
   border-radius:6px;padding:3px 7px;vertical-align:2px;margin-left:4px}
 .zn-opr{background:var(--zeleno-bg);color:var(--zeleno)}
 .zn-odp{background:#EEF1F2;color:var(--siva)}
+.zn-poz{background:var(--alarm-bg);color:var(--alarm)}
+.zn-neg{background:var(--zeleno-bg);color:var(--zeleno)}
+.rezultat-izbira{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.rezultat-karta{border:1px solid var(--crta);border-radius:12px;padding:14px;text-align:left;background:#fff;color:var(--tinta)}
+.rezultat-karta b{display:block;font-size:16px;margin-bottom:5px}
+.rezultat-karta span{display:block;font-size:12px;color:var(--siva);line-height:1.5}
+.rezultat-karta.pozitiven{border-color:#E6B8B4}
+.rezultat-karta.pozitiven b{color:var(--alarm)}
+.rezultat-karta.negativen{border-color:#B9DCC7}
+.rezultat-karta.negativen b{color:var(--zeleno)}
+.rezultat-karta:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:520px){.rezultat-izbira{grid-template-columns:1fr}}
 
 .akcije{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
@@ -672,6 +684,28 @@ body.namizno .web-backup{display:none!important}
   </div>
 </div>
 
+<!-- rezultat fuzijske biopsije -->
+<div class="zastor" id="zastorRezultat">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="nasRezultat">
+    <h2 id="nasRezultat">Opravil FB</h2>
+    <div id="rezultatOseba" class="stanje"></div>
+    <p class="namig" style="margin-top:0">Izberi rezultat biopsije. Pacient se v obeh primerih premakne v arhiv.</p>
+    <div class="rezultat-izbira">
+      <button type="button" class="rezultat-karta pozitiven" id="gumbRezultatPozitiven">
+        <b>Pozitivna</b>
+        <span>Pacient gre v arhiv. Vsi shranjeni DICOM in MR PDF dokumenti bodo po dodatni potrditvi trajno izbrisani.</span>
+      </button>
+      <button type="button" class="rezultat-karta negativen" id="gumbRezultatNegativen">
+        <b>Negativna</b>
+        <span>Pacient gre v arhiv. DICOM in MR izvid ostaneta shranjena za morebitno prihodnjo obravnavo.</span>
+      </button>
+    </div>
+    <div class="akcije">
+      <button class="gumb drugi" id="gumbRezultatPreklic">Prekliči</button>
+    </div>
+  </div>
+</div>
+
 <!-- PIN zaklep -->
 <div id="pinZastor">
   <div class="pinOkno">
@@ -871,6 +905,16 @@ function normalizirajPacienta(raw, indeks, ids, strog){
   if(terminDatum) p.terminDatum = terminDatum;
   if(veljavnaUra(terminUra)) p.terminUra = terminUra;
   if(datumZakljucka) p.datumZakljucka = datumZakljucka;
+  const rezultatBiopsije = varnoBesedilo(raw.rezultatBiopsije, 20);
+  if(['pozitivna','negativna'].includes(rezultatBiopsije)) p.rezultatBiopsije = rezultatBiopsije;
+  const datumRezultataBiopsije = preveriDatum(raw.datumRezultataBiopsije, 'datum rezultata biopsije');
+  if(datumRezultataBiopsije) p.datumRezultataBiopsije = datumRezultataBiopsije;
+  if(raw.dokumentiIzbrisaniPoPozitivnem === true) p.dokumentiIzbrisaniPoPozitivnem = true;
+  const datumIzbrisaDokumentov = preveriDatum(raw.datumIzbrisaDokumentov, 'datum izbrisa dokumentov');
+  if(datumIzbrisaDokumentov) p.datumIzbrisaDokumentov = datumIzbrisaDokumentov;
+  if(Number.isFinite(Number(raw.steviloIzbrisanihDokumentov))) {
+    p.steviloIzbrisanihDokumentov = Math.max(0, Math.floor(Number(raw.steviloIzbrisanihDokumentov)));
+  }
   return p;
 }
 function preveriSeznam(sez, strog=true){
@@ -907,6 +951,8 @@ let izvozCiljnaMapa = '';
 let pripravaPodatki = null;
 let zgodovinaPacientId = null;
 let zdravjeDokumentiPoteka = false;
+let rezultatPacientId = null;
+let rezultatAkcijaPoteka = false;
 
 function napakaNamiznegaOdgovora(odgovor, privzeto){
   const e = odgovor && odgovor.error ? odgovor.error : null;
@@ -1375,7 +1421,7 @@ function renderNaroceni(){
       dokumentStatus(p) +
       (p.opombe ? '<div class="opomba">' + esc(p.opombe) + '</div>' : '') +
       '<div class="akcije">' +
-        '<button class="gumb mali" data-a="opravljeno" data-id="' + esc(p.id) + '">Označi opravljeno</button>' +
+        '<button class="gumb mali" data-a="opravljeno" data-id="' + esc(p.id) + '">Opravil FB</button>' +
         '<button class="gumb drugi mali" data-a="prestavi" data-id="' + esc(p.id) + '">Prestavi</button>' +
         dokumentGumb(p) +
         zgodovinaGumb(p) +
@@ -1393,19 +1439,43 @@ function renderArhiv(){
     .sort((a, b) => (b.datumZakljucka || '').localeCompare(a.datumZakljucka || ''));
   $('#sezArh').innerHTML = sez.length ? sez.map(p => {
     const opr = p.status === 'opravljeno';
-    const zn = opr ? '<span class="znacka zn-opr">Opravljeno</span>' : '<span class="znacka zn-odp">Odpovedano</span>';
+    const pozitiven = opr && p.rezultatBiopsije === 'pozitivna';
+    const negativen = opr && p.rezultatBiopsije === 'negativna';
+    const zn = !opr
+      ? '<span class="znacka zn-odp">Odpovedano</span>'
+      : pozitiven
+        ? '<span class="znacka zn-poz">Pozitivna</span>'
+        : negativen
+          ? '<span class="znacka zn-neg">Negativna</span>'
+          : '<span class="znacka zn-opr">Opravljeno</span>';
+    const zakljucek = !opr
+      ? 'Odpovedano'
+      : pozitiven
+        ? 'Pozitivna biopsija'
+        : negativen
+          ? 'Negativna biopsija'
+          : 'Opravljeno';
+    let dokumentInfo = dokumentStatus(p);
+    if(pozitiven && p.dokumentiIzbrisaniPoPozitivnem){
+      dokumentInfo = '<div class="stanje ok" style="margin:9px 0 0">DICOM in MR izvid sta bila po pozitivnem rezultatu trajno izbrisana.</div>';
+    }else if(pozitiven){
+      dokumentInfo = '<div class="stanje slabo" style="margin:9px 0 0">Pozitiven rezultat je shranjen, vendar popoln izbris dokumentov še ni potrjen.</div>' + dokumentStatus(p);
+    }else if(negativen){
+      dokumentInfo = dokumentStatus(p) + '<p class="namig" style="margin:7px 0 0">Dokumenti so ohranjeni zaradi morebitne prihodnje obravnave.</p>';
+    }
     return '<article class="karton ' + (opr ? 'ok' : 'arhivsko') + '">' +
       '<div class="vrh"><div>' +
         '<div class="ime">' + esc(p.priimek) + ' ' + esc(p.ime) + zn + '</div>' +
         '<div class="meta">' + metaVrsta(p) + '</div>' +
-        '<div class="rokvrsta">' + (opr ? 'Opravljeno' : 'Odpovedano') + ' <b>' + fmtD(p.datumZakljucka) + '</b>' +
+        '<div class="rokvrsta">' + zakljucek + ' <b>' + fmtD(p.datumZakljucka) + '</b>' +
           (p.terminDatum ? ' · termin ' + fmtD(p.terminDatum) + (p.terminUra ? ' ob ' + esc(p.terminUra) : '') : '') + '</div>' +
       '</div></div>' +
-      dokumentStatus(p) +
+      dokumentInfo +
       (p.opombe ? '<div class="opomba">' + esc(p.opombe) + '</div>' : '') +
       '<div class="akcije">' +
         dokumentGumb(p) +
         zgodovinaGumb(p) +
+        (pozitiven && !p.dokumentiIzbrisaniPoPozitivnem ? '<button class="gumb nevaren mali" data-a="izbrisiPozitivneDokumente" data-id="' + esc(p.id) + '">Ponovi izbris dokumentov</button>' : '') +
         '<button class="gumb drugi mali" data-a="vrni" data-id="' + esc(p.id) + '">Vrni na čakalni seznam</button>' +
         '<button class="gumb nevaren mali" data-a="izbrisi" data-id="' + esc(p.id) + '">Izbriši trajno</button>' +
       '</div></article>';
@@ -1557,6 +1627,9 @@ function podrobnostiZgodovine(event){
   if(event.eventType==='document_added') return (d.kind==='dicom'?(d.fileCount||0)+' DICOM datotek':formatBajtov(d.totalBytes||0));
   if(event.eventType==='usb_export_completed') return 'Dan fuzij: '+fmtD(d.appointmentDate||'')+'.';
   if(event.eventType==='status_changed'&&d.to) return 'Nov status: '+(STAT[d.to]||d.to)+'.';
+  if(event.eventType==='biopsy_result') return d.to==='pozitivna'?'Pozitiven rezultat.':d.to==='negativna'?'Negativen rezultat.':'Rezultat odstranjen.';
+  if(event.eventType==='positive_documents_deleted') return 'Izbrisanih dokumentov: '+Number(d.deletedCount||0)+'.';
+  if(event.eventType==='positive_documents_delete_partial') return 'Izbrisanih: '+Number(d.deletedCount||0)+' · napak: '+Number(d.errorCount||0)+'.';
   return '';
 }
 async function odpriZgodovino(patientId){
@@ -1782,6 +1855,114 @@ function shraniTermin(){
   pokaziZavihek('naroceni');
 }
 
+function nastaviRezultatGumbe(zaseden){
+  rezultatAkcijaPoteka = !!zaseden;
+  ['#gumbRezultatPozitiven','#gumbRezultatNegativen','#gumbRezultatPreklic'].forEach(id => {
+    const el = $(id); if(el) el.disabled = !!zaseden;
+  });
+}
+function zapriRezultatBiopsije(){
+  if(rezultatAkcijaPoteka) return;
+  rezultatPacientId = null;
+  $('#zastorRezultat').classList.remove('odprt');
+}
+function odpriRezultatBiopsije(id){
+  const p = pacienti.find(x => x.id === id);
+  if(!p) return;
+  rezultatPacientId = id;
+  $('#rezultatOseba').innerHTML = '<b>' + esc(p.priimek + ' ' + p.ime) + '</b> · MI ' + esc(p.maticniIndeks) +
+    (p.terminDatum ? '<br>Termin: ' + fmtD(p.terminDatum) + (p.terminUra ? ' ob ' + esc(p.terminUra) : '') : '');
+  $('#zastorRezultat').classList.add('odprt');
+}
+async function osveziPoIzbrisuDokumentov(){
+  osveziDokumentPovzetek();
+  renderVse();
+  await osveziDokumentShrambo();
+  if(document.querySelector('.zav.aktiven')?.dataset.tab === 'priprava') await osveziPripravo();
+}
+async function izbrisiDokumentePozitivnega(patientId, brezPonovnePotrditve=false){
+  const p = pacienti.find(x => x.id === patientId);
+  if(!p || p.rezultatBiopsije !== 'pozitivna') return false;
+  if(!JE_NAMIZNA || !window.desktopApi.documentsDeletePatient){
+    throw new Error('Avtomatsko brisanje dokumentov je na voljo samo v nameščeni namizni aplikaciji.');
+  }
+  if(!brezPonovnePotrditve && !confirm(
+    'Trajno izbrišem vse DICOM mape in vse MR PDF-izvide za:\n\n' +
+    p.priimek + ' ' + p.ime + ' (MI ' + p.maticniIndeks + ')?\n\nTega ni mogoče razveljaviti.'
+  )) return false;
+
+  try{
+    const r = await window.desktopApi.documentsDeletePatient(patientId);
+    if(!r || !r.complete){
+      const napake = Array.isArray(r?.errors) ? r.errors.map(x => x.message).filter(Boolean).join('\n') : '';
+      throw new Error('Nekaterih dokumentov ni bilo mogoče izbrisati.' + (napake ? '\n' + napake : ''));
+    }
+    const svezi = pacienti.find(x => x.id === patientId);
+    if(!svezi) return false;
+    svezi.dokumentiIzbrisaniPoPozitivnem = true;
+    svezi.datumIzbrisaDokumentov = toISO(danes());
+    svezi.steviloIzbrisanihDokumentov = Number(r.deletedCount || 0);
+    if(!shrani('izbris dokumentov po pozitivnem rezultatu: ' + svezi.priimek)) {
+      throw new Error('Dokumenti so izbrisani, oznake v bazi pa ni bilo mogoče shraniti.');
+    }
+    await osveziPoIzbrisuDokumentov();
+    toast('Pozitiven rezultat je arhiviran; DICOM in MR izvid sta izbrisana.');
+    return true;
+  }catch(e){
+    await osveziPoIzbrisuDokumentov().catch(() => {});
+    throw e;
+  }
+}
+async function potrdiRezultatBiopsije(rezultat){
+  if(rezultatAkcijaPoteka || !['pozitivna','negativna'].includes(rezultat)) return;
+  const p = pacienti.find(x => x.id === rezultatPacientId);
+  if(!p) return;
+
+  if(rezultat === 'pozitivna'){
+    const d = dokumentiPovzetek[p.id] || {};
+    const dokumenti = Number(!!d.hasDicom) + Number(!!d.hasPdf);
+    const besedilo =
+      'Potrdim POZITIVEN rezultat za:\n\n' + p.priimek + ' ' + p.ime +
+      '\n\nPacient bo premaknjen v arhiv.' +
+      (dokumenti
+        ? '\nVsi shranjeni DICOM in MR PDF dokumenti bodo nato trajno izbrisani.'
+        : '\nZa pacienta trenutno ni evidentiranih DICOM/PDF dokumentov.') +
+      '\n\nNadaljujem?';
+    if(!confirm(besedilo)) return;
+  }
+
+  nastaviRezultatGumbe(true);
+  try{
+    p.status = 'opravljeno';
+    p.datumZakljucka = toISO(danes());
+    p.rezultatBiopsije = rezultat;
+    p.datumRezultataBiopsije = toISO(danes());
+    delete p.dokumentiIzbrisaniPoPozitivnem;
+    delete p.datumIzbrisaDokumentov;
+    delete p.steviloIzbrisanihDokumentov;
+
+    if(!shrani('rezultat FB ' + rezultat + ': ' + p.priimek)) return;
+    $('#zastorRezultat').classList.remove('odprt');
+    rezultatPacientId = null;
+
+    if(rezultat === 'pozitivna'){
+      try{
+        await izbrisiDokumentePozitivnega(p.id, true);
+      }catch(e){
+        alert(
+          'Pozitiven rezultat je shranjen in pacient je v arhivu, vendar brisanje dokumentov ni bilo popolnoma uspešno.\n\n' +
+          (e.message || 'Neznana napaka.') +
+          '\n\nV arhivu uporabi gumb »Ponovi izbris dokumentov«.'
+        );
+      }
+    }else{
+      toast('Negativen rezultat je arhiviran; DICOM in MR izvid ostaneta shranjena.');
+    }
+  }finally{
+    nastaviRezultatGumbe(false);
+  }
+}
+
 /* ═══ 7 · Akcije na kartonih ═══ */
 document.querySelector('main').addEventListener('click', e => {
   const g = e.target.closest('[data-a]');
@@ -1801,9 +1982,11 @@ document.querySelector('main').addEventListener('click', e => {
     case 'zgodovina':
       if(p) odpriZgodovino(p.id); break;
     case 'opravljeno': {
-      if(!p) break;
-      p.status = 'opravljeno'; p.datumZakljucka = toISO(danes());
-      if(shrani('opravljeno: ' + p.priimek)) toast('Označeno kot opravljeno — pacient je v arhivu.');
+      if(p) odpriRezultatBiopsije(p.id);
+      break;
+    }
+    case 'izbrisiPozitivneDokumente': {
+      if(p) izbrisiDokumentePozitivnega(p.id).catch(e => alert('Dokumentov ni bilo mogoče v celoti izbrisati.\n\n' + (e.message || 'Neznana napaka.')));
       break;
     }
     case 'odpovej': {
@@ -1816,7 +1999,7 @@ document.querySelector('main').addEventListener('click', e => {
     }
     case 'vrni': {
       if(!p) break;
-      p.status = 'cakalni'; delete p.terminDatum; delete p.terminUra; delete p.datumZakljucka;
+      p.status = 'cakalni'; delete p.terminDatum; delete p.terminUra; delete p.datumZakljucka; delete p.rezultatBiopsije; delete p.datumRezultataBiopsije; delete p.dokumentiIzbrisaniPoPozitivnem; delete p.datumIzbrisaDokumentov; delete p.steviloIzbrisanihDokumentov;
       if(shrani('vrnitev: ' + p.priimek)){
         toast('Pacient je spet na čakalnem seznamu.');
         pokaziZavihek('cakalni');
@@ -1995,7 +2178,7 @@ async function naloziMapo(){
 }
 function izvozniObjekt(){
   return {
-    aplikacija: 'Fuzijska biopsija', verzija: 6, izvozeno: new Date().toISOString(),
+    aplikacija: 'Fuzijska biopsija', verzija: 7, izvozeno: new Date().toISOString(),
     nastavitve: {ustanove: nastavitve.ustanove, urnik: nastavitve.urnik},
     pacienti: pacienti
   };
@@ -2215,11 +2398,11 @@ function csvVarno(v){
   return /[";\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
 }
 async function izvoziCSV(){
-  const g = ['Priimek','Ime','Datum rojstva','Matični indeks','Telefon','MR ustanova','Datum vpisa','Status','Termin','Ura','Zaključeno','Opombe'];
+  const g = ['Priimek','Ime','Datum rojstva','Matični indeks','Telefon','MR ustanova','Datum vpisa','Status','Termin','Ura','Zaključeno','Rezultat FB','Dokumenti izbrisani','Opombe'];
   const v = pacienti.map(p => [
     p.priimek, p.ime, fmtCSVDate(p.datumRojstva), p.maticniIndeks, p.telefon || '',
     p.mrUstanova || '', fmtCSVDate(p.datumVpisa), STAT[p.status] || p.status,
-    fmtCSVDate(p.terminDatum), p.terminUra || '', fmtCSVDate(p.datumZakljucka), p.opombe || ''
+    fmtCSVDate(p.terminDatum), p.terminUra || '', fmtCSVDate(p.datumZakljucka), p.rezultatBiopsije === 'pozitivna' ? 'Pozitivna' : p.rezultatBiopsije === 'negativna' ? 'Negativna' : '', p.dokumentiIzbrisaniPoPozitivnem ? 'DA' : 'NE', p.opombe || ''
   ]);
   const csv = '\uFEFF' + [g].concat(v).map(r => r.map(csvVarno).join(';')).join('\r\n');
   const r = await prenesi(csv, 'text/csv;charset=utf-8', 'fuzijska-biopsija-' + toISO(danes()) + '.csv');
@@ -2695,6 +2878,9 @@ async function init(){
   $('#gumbPacPreklic').addEventListener('click', zapriObrazce);
   $('#gumbTerShrani').addEventListener('click', shraniTermin);
   $('#gumbTerPreklic').addEventListener('click', zapriObrazce);
+  $('#gumbRezultatPreklic').addEventListener('click', zapriRezultatBiopsije);
+  $('#gumbRezultatPozitiven').addEventListener('click', () => potrdiRezultatBiopsije('pozitivna'));
+  $('#gumbRezultatNegativen').addEventListener('click', () => potrdiRezultatBiopsije('negativna'));
   if(JE_NAMIZNA){
     $('#gumbDokZapri').addEventListener('click', () => $('#zastorDokumenti').classList.remove('odprt'));
     $('#gumbDodajDicom').addEventListener('click', uvoziDicom);
