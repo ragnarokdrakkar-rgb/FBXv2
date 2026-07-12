@@ -41,6 +41,42 @@ jobs:
       - name: Build Windows installer and update metadata
         run: npm run dist:win
 
+      - name: Ensure latest.yml exists
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $exe = Get-Item "release\Fuzijska-biopsija-Setup-$version.exe"
+
+          $sha = [System.Security.Cryptography.SHA512]::Create()
+          $hash = $sha.ComputeHash(
+            [System.IO.File]::ReadAllBytes($exe.FullName)
+          )
+          $sha512 = [Convert]::ToBase64String($hash)
+          $releaseDate = (Get-Date).ToUniversalTime().ToString("o")
+
+          $content = @"
+          version: $version
+          files:
+            - url: $($exe.Name)
+              sha512: $sha512
+              size: $($exe.Length)
+          path: $($exe.Name)
+          sha512: $sha512
+          releaseDate: '$releaseDate'
+          "@
+
+          [System.IO.File]::WriteAllText(
+            "$PWD\release\latest.yml",
+            $content,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+
+          if (-not (Test-Path "release\latest.yml")) {
+            throw "latest.yml ni bil ustvarjen."
+          }
+
+          Get-Content "release\latest.yml"
+
       - name: Create published GitHub Release
         shell: pwsh
         env:
