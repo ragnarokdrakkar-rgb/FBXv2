@@ -13,6 +13,11 @@ contextBridge.exposeInMainWorld('desktopApi', Object.freeze({
   saveSettings: (payload) => sync('desktop:save-settings', payload),
   getBackups: () => sync('desktop:get-backups'),
   getDiagnostics: () => sync('desktop:get-diagnostics'),
+  healthDatabase: () => ipcRenderer.invoke('health:database'),
+  healthDocuments: () => ipcRenderer.invoke('documents:verify-all'),
+  exportDiagnostics: () => ipcRenderer.invoke('health:export-diagnostics'),
+  getPatientHistory: (patientId, limit = 100) => ipcRenderer.invoke('patients:get-history', { patientId, limit }),
+  preparationGetDay: (appointmentDate) => ipcRenderer.invoke('preparation:get-day', appointmentDate),
   openDataFolder: () => ipcRenderer.invoke('desktop:open-data-folder'),
   openLogsFolder: () => ipcRenderer.invoke('desktop:open-logs-folder'),
   saveTextFile: (options) => ipcRenderer.invoke('desktop:save-text-file', options),
@@ -44,6 +49,12 @@ contextBridge.exposeInMainWorld('desktopApi', Object.freeze({
     const listener = (_event, progress) => callback(progress);
     ipcRenderer.on('documents:progress', listener);
     return () => ipcRenderer.removeListener('documents:progress', listener);
+  },
+  onHealthDocumentsProgress: (callback) => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('health:documents-progress', listener);
+    return () => ipcRenderer.removeListener('health:documents-progress', listener);
   },
   cloudGetStatus: () => ipcRenderer.invoke('cloud:get-status'),
   cloudConfigureAppScript: (endpointUrl, authSecret) => ipcRenderer.invoke('cloud:configure-appscript', { endpointUrl, authSecret }),

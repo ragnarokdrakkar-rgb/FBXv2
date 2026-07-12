@@ -43,15 +43,15 @@ try {
 
   const migrated = new AppDatabase(dbPath);
   const state = migrated.loadState();
-  assert.equal(state.schemaVersion, 3);
+  assert.equal(state.schemaVersion, 4);
   assert.equal(state.patients.length, 1);
   assert.equal(state.patients[0].id, patient.id);
   assert.deepEqual(migrated.getPatientAssets(patient.id), []);
-  assert.equal(migrated.getDiagnostics().schemaVersion, 3);
+  assert.equal(migrated.getDiagnostics().schemaVersion, 4);
   assert.deepEqual(migrated.getExportHistory(), []);
   migrated.close();
 
-  console.log('✓ Migracija SQLite sheme 1 → 3 je uspela brez izgube pacienta.');
+  console.log('✓ Migracija SQLite sheme 1 → 4 je uspela brez izgube pacienta.');
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }

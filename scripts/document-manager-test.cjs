@@ -71,6 +71,11 @@ const { DocumentManager } = require('../src/main/document-manager.cjs');
     assert.equal(summary.hasDicom, true);
     assert.equal(summary.hasPdf, true);
 
+    const firstHealth = await manager.verifyAllDocuments();
+    assert.equal(firstHealth.healthy, true);
+    assert.equal(firstHealth.issueCount, 0);
+    assert.equal(firstHealth.assetCount, 2);
+
     const secondDicom = await manager.importDicom(patient.id, sourceB);
     assert.equal(secondDicom.asset.fileCount, 1);
     let assets = manager.getPatientAssets(patient.id);

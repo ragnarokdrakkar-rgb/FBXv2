@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0
+
+- nov zavihek Priprava dneva s pregledom naročenih, pripravljenih in manjkajočih dokumentov,
+- prikaz zadnjega prenosa za izbrani dan fuzij,
+- preverjanje SQLite quick_check in tujih ključev,
+- celovito ponovno preverjanje vseh trenutnih DICOM map in PDF-izvidov,
+- zgodovina pacienta za statuse, termine, spremembe podatkov, dokumente in USB-prenose,
+- izvoz tehnične diagnostike brez osebnih podatkov,
+- SQLite migracija podatkovne sheme 3 → 4,
+- navodila za varno prvo namestitev na službeni računalnik.
+
 ## 1.3.0
 
 - potrditvena polja za izbiro več pacientov na čakalnem seznamu,
@@ -49,8 +60,3 @@
 - lokalna SQLite baza,
 - Windows NSIS installer,
 - GitHub Actions build.
-
-## 1.4.0 build popravek
-
-- Windows gradnja uporablja uradni programski API `electron-builder` namesto neposrednega zagona `.cmd` datoteke.
-- Odpravljen `spawnSync ... EINVAL` na novejših različicah Node.js.

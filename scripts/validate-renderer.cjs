@@ -17,6 +17,11 @@ assert.match(html, /Naroči izbrane/);
 assert.match(html, /Pripravi prenos/);
 assert.match(html, /window\.desktopApi\.exportsChooseAndStart/);
 assert.match(html, /window\.desktopApi\.exportsPrepare/);
+assert.match(html, /Priprava dneva/);
+assert.match(html, /Zdravje aplikacije in dokumentov/);
+assert.match(html, /window\.desktopApi\.preparationGetDay/);
+assert.match(html, /window\.desktopApi\.getPatientHistory/);
+assert.match(html, /window\.desktopApi\.healthDocuments/);
 assert.doesNotMatch(html, /<link rel="manifest"/);
 
 console.log('✓ Renderer sintaksa in namizna integracija sta veljavni.');

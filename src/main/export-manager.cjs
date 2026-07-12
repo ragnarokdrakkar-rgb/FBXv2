@@ -413,7 +413,7 @@ class ExportManager {
         status: 'completed',
         startedAt: operation.startedAt,
         completedAt,
-        details: { manifest: 'manifest.json', patientList: 'seznam_pacientov.csv' },
+        details: { manifest: 'manifest.json', patientList: 'seznam_pacientov.csv', patientIds: items.map((item) => item.patient.id) },
       });
       this.emit({ operationId: operation.id, phase: 'done', message: 'Prenos je končan in preverjen.', ...result });
       return result;

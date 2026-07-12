@@ -6,6 +6,7 @@ const { backup, DatabaseSync } = require('node:sqlite');
 
 const MAX_INTERNAL_BACKUPS = 10;
 const MAX_AUDIT_ROWS = 1000;
+const MAX_PATIENT_EVENTS = 5000;
 
 function nowIso() {
   return new Date().toISOString();
@@ -175,6 +176,29 @@ class AppDatabase {
         `);
       });
     }
+
+    if (current < 4) {
+      this.#transaction(() => {
+        this.db.exec(`
+          CREATE TABLE IF NOT EXISTS patient_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            details_json TEXT NOT NULL DEFAULT '{}'
+          ) STRICT;
+
+          CREATE INDEX IF NOT EXISTS idx_patient_events_patient
+            ON patient_events(patient_id, created_at DESC, id DESC);
+
+          INSERT INTO meta(key, value) VALUES ('schema_version', '4')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+
+          PRAGMA user_version = 4;
+        `);
+      });
+    }
   }
 
   #verifyIntegrity() {
@@ -271,7 +295,7 @@ class AppDatabase {
       settings: this.#readSettings(),
       backups: this.#readBackups(),
       revision: this.#getRevision(),
-      schemaVersion: 3,
+      schemaVersion: 4,
     };
   }
 
@@ -393,6 +417,8 @@ class AppDatabase {
         if (!ids.has(id)) remove.run(id);
       }
 
+      this.#recordPatientChanges(previousPatients, patients, timestamp);
+
       this.db.prepare(`
         INSERT INTO app_settings(id, json, updated_at)
         VALUES (1, ?, ?)
@@ -416,6 +442,122 @@ class AppDatabase {
     });
   }
 
+  #insertPatientEvent(patientId, eventType, title, details = {}, createdAt = nowIso()) {
+    const safePatientId = asText(patientId, 100);
+    if (!safePatientId) return;
+    this.db.prepare(`
+      INSERT INTO patient_events(patient_id, created_at, event_type, title, details_json)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      safePatientId,
+      asText(createdAt, 40),
+      asText(eventType, 100),
+      asText(title, 500),
+      JSON.stringify(details || {}),
+    );
+
+    this.db.prepare(`
+      DELETE FROM patient_events
+      WHERE id NOT IN (
+        SELECT id FROM patient_events ORDER BY id DESC LIMIT ?
+      )
+    `).run(MAX_PATIENT_EVENTS);
+  }
+
+  #recordPatientChanges(previousPatients, nextPatients, timestamp) {
+    const previous = new Map(previousPatients.map((patient) => [String(patient.id), patient]));
+    const next = new Map(nextPatients.map((patient) => [String(patient.id), patient]));
+    const statusLabels = {
+      cakalni: 'Vrnjeno na čakalni seznam',
+      narocen: 'Pacient naročen',
+      opravljeno: 'Označeno kot opravljeno',
+      odpovedan: 'Termin odpovedan',
+    };
+
+    for (const [id, patient] of next) {
+      const old = previous.get(id);
+      if (!old) {
+        this.#insertPatientEvent(id, 'patient_added', 'Pacient dodan v evidenco', {
+          status: patient.status || 'cakalni',
+          enrollmentDate: patient.datumVpisa || '',
+        }, timestamp);
+        continue;
+      }
+
+      if (String(old.status || '') !== String(patient.status || '')) {
+        this.#insertPatientEvent(id, 'status_changed', statusLabels[patient.status] || 'Status pacienta spremenjen', {
+          from: old.status || '',
+          to: patient.status || '',
+          completionDate: patient.datumZakljucka || '',
+        }, timestamp);
+      }
+
+      const oldAppointment = `${old.terminDatum || ''}|${old.terminUra || ''}`;
+      const newAppointment = `${patient.terminDatum || ''}|${patient.terminUra || ''}`;
+      if (oldAppointment !== newAppointment) {
+        const title = patient.terminDatum
+          ? (old.terminDatum ? 'Termin prestavljen' : 'Termin določen')
+          : 'Termin odstranjen';
+        this.#insertPatientEvent(id, 'appointment_changed', title, {
+          previousDate: old.terminDatum || '',
+          previousTime: old.terminUra || '',
+          date: patient.terminDatum || '',
+          time: patient.terminUra || '',
+        }, timestamp);
+      }
+
+      const trackedFields = [
+        ['ime', 'ime'], ['priimek', 'priimek'], ['maticniIndeks', 'matični indeks'],
+        ['datumRojstva', 'datum rojstva'], ['telefon', 'telefon'],
+        ['mrUstanova', 'MR ustanova'], ['datumVpisa', 'datum vpisa'], ['opombe', 'opombe'],
+      ];
+      const changedFields = trackedFields
+        .filter(([key]) => String(old[key] ?? '') !== String(patient[key] ?? ''))
+        .map(([, label]) => label);
+      if (changedFields.length) {
+        this.#insertPatientEvent(id, 'patient_updated', 'Podatki pacienta posodobljeni', { changedFields }, timestamp);
+      }
+    }
+
+    for (const [id, patient] of previous) {
+      if (!next.has(id)) {
+        this.#insertPatientEvent(id, 'patient_removed', 'Pacient odstranjen iz evidence', {
+          previousStatus: patient.status || '',
+        }, timestamp);
+      }
+    }
+  }
+
+  getPatientHistory(patientId, limit = 100) {
+    const safePatientId = asText(patientId, 100);
+    const safeLimit = Math.max(1, Math.min(500, Number(limit || 100)));
+    const rows = this.db.prepare(`
+      SELECT id, created_at, event_type, title, details_json
+      FROM patient_events
+      WHERE patient_id = ?
+      ORDER BY created_at DESC, id DESC
+      LIMIT ?
+    `).all(safePatientId, safeLimit);
+    if (!rows.length && this.getPatient(safePatientId)) {
+      return [{
+        id: 0,
+        patientId: safePatientId,
+        createdAt: '',
+        eventType: 'legacy_record',
+        title: 'Pacient je obstajal pred uvedbo podrobne zgodovine.',
+        details: {},
+      }];
+    }
+    return rows.map((row) => ({
+      id: Number(row.id),
+      patientId: safePatientId,
+      createdAt: row.created_at,
+      eventType: row.event_type,
+      title: row.title,
+      details: parseJson(row.details_json || '{}', {}),
+    }));
+  }
+
   #insertAudit(action, details) {
     this.db.prepare(`
       INSERT INTO audit_log(created_at, action, details_json)
@@ -437,15 +579,46 @@ class AppDatabase {
   getDiagnostics() {
     const patientCount = Number(this.db.prepare('SELECT COUNT(*) AS count FROM patients').get().count || 0);
     const backupCount = Number(this.db.prepare('SELECT COUNT(*) AS count FROM internal_backups').get().count || 0);
+    const eventCount = Number(this.db.prepare('SELECT COUNT(*) AS count FROM patient_events').get().count || 0);
+    const exportCount = Number(this.db.prepare('SELECT COUNT(*) AS count FROM export_runs').get().count || 0);
     const fileSize = fs.existsSync(this.databasePath) ? fs.statSync(this.databasePath).size : 0;
+    const walPath = `${this.databasePath}-wal`;
+    const shmPath = `${this.databasePath}-shm`;
     return {
       databasePath: this.databasePath,
       patientCount,
       backupCount,
+      eventCount,
+      exportCount,
       revision: this.#getRevision(),
-      schemaVersion: 3,
+      schemaVersion: 4,
       fileSize,
+      walSize: fs.existsSync(walPath) ? fs.statSync(walPath).size : 0,
+      shmSize: fs.existsSync(shmPath) ? fs.statSync(shmPath).size : 0,
     };
+  }
+
+  runHealthCheck() {
+    const quick = this.db.prepare('PRAGMA quick_check').all();
+    const quickValues = quick.map((row) => String(Object.values(row)[0] || ''));
+    const foreignKeys = this.db.prepare('PRAGMA foreign_key_check').all();
+    const diagnostics = this.getDiagnostics();
+    return {
+      checkedAt: nowIso(),
+      healthy: quickValues.length === 1 && quickValues[0] === 'ok' && foreignKeys.length === 0,
+      quickCheck: quickValues,
+      foreignKeyErrors: foreignKeys,
+      ...diagnostics,
+      ...this.getAssetDiagnostics(),
+    };
+  }
+
+  getCurrentAssetRecords() {
+    return this.db.prepare(`
+      SELECT * FROM patient_assets
+      WHERE is_current = 1
+      ORDER BY patient_id ASC, kind ASC, created_at DESC
+    `).all().map((row) => this.#assetRow(row));
   }
 
   addPatientAsset(asset = {}) {
@@ -490,6 +663,7 @@ class AppDatabase {
         timestamp,
       );
       this.#insertAudit('patient_asset_added', { id, patientId, kind, storedPath });
+      this.#insertPatientEvent(patientId, 'document_added', kind === 'dicom' ? 'Dodana DICOM mapa' : 'Dodan MR izvid PDF', { assetId: id, kind, fileCount: Math.max(0, Number(asset.fileCount || 0)), totalBytes: Math.max(0, Number(asset.totalBytes || 0)) });
       return this.getPatientAsset(id);
     });
   }
@@ -544,6 +718,7 @@ class AppDatabase {
 
   recordExportRun(run = {}) {
     const id = asText(run.id, 100);
+    const previousRun = id ? this.getExportRun(id) : null;
     const appointmentDate = asText(run.appointmentDate, 10);
     const destinationPath = asText(run.destinationPath, 4000);
     const status = asText(run.status || 'started', 30);
@@ -583,6 +758,16 @@ class AppDatabase {
       JSON.stringify(run.details || {}),
     );
     this.#insertAudit('export_run_saved', { id, appointmentDate, status, destinationPath });
+    const patientIds = Array.isArray(run.details?.patientIds) ? run.details.patientIds : [];
+    if (status === 'completed' && previousRun?.status !== 'completed') {
+      for (const patientId of patientIds) {
+        this.#insertPatientEvent(patientId, 'usb_export_completed', 'Dokumenti preneseni za dan fuzij', {
+          appointmentDate,
+          destinationPath,
+          exportRunId: id,
+        });
+      }
+    }
     return this.getExportRun(id);
   }
 
@@ -679,6 +864,7 @@ class AppDatabase {
         kind: asset.kind,
         storedPath: asset.storedPath,
       });
+      this.#insertPatientEvent(asset.patientId, 'document_deleted', asset.kind === 'dicom' ? 'DICOM mapa izbrisana' : 'MR izvid PDF izbrisan', { assetId: asset.id, kind: asset.kind });
       return { deleted: true, asset };
     });
   }

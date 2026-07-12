@@ -36,8 +36,6 @@ async function main() {
 
   console.log(`Gradim za GitHub posodobitve: ${repository.fullName}`);
 
-  // Uporabimo uradni programski API electron-builderja. Tako na Windowsu
-  // ne poskušamo neposredno zagnati .cmd datoteke, kar je povzročalo EINVAL.
   const { build, Platform } = require('electron-builder');
   const targetName = directoryBuild ? 'dir' : 'nsis';
 

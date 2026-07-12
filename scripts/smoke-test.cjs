@@ -75,7 +75,18 @@ try {
   const diagnostics = db.getDiagnostics();
   assert.equal(diagnostics.patientCount, 1);
   assert.equal(diagnostics.backupCount, 1);
+  assert.equal(diagnostics.schemaVersion, 4);
+  assert.ok(diagnostics.eventCount >= 3);
   assert.ok(diagnostics.fileSize > 0);
+
+  const history = db.getPatientHistory(patient.id);
+  assert.ok(history.some((item) => item.eventType === 'patient_added'));
+  assert.ok(history.some((item) => item.eventType === 'appointment_changed'));
+  assert.ok(history.some((item) => item.eventType === 'status_changed'));
+
+  const health = db.runHealthCheck();
+  assert.equal(health.healthy, true);
+  assert.deepEqual(health.quickCheck, ['ok']);
 
   db.close();
   console.log('✓ SQLite smoke test je uspel.');

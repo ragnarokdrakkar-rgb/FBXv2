@@ -115,6 +115,7 @@ class DocumentManager {
     this.configPath = path.join(configDirectory, 'documents-config.json');
     this.config = readJson(this.configPath, {});
     this.activePatients = new Set();
+    this.healthScanActive = false;
     this.initError = '';
     try { this.ensureRoot(); } catch (error) { this.initError = error.message || String(error); }
   }
@@ -456,6 +457,119 @@ class DocumentManager {
       throw error;
     } finally {
       this.endPatientOperation(patient.id);
+    }
+  }
+
+  async verifyAllDocuments() {
+    if (this.healthScanActive) throw new Error('Preverjanje dokumentov že poteka.');
+    this.healthScanActive = true;
+    const operationId = crypto.randomUUID();
+    const assets = this.database.getCurrentAssetRecords();
+    const issues = [];
+    let checked = 0;
+
+    try {
+      this.emit(operationId, {
+        kind: 'health_check',
+        phase: 'scanning',
+        message: `Preverjam dokumente: 0 / ${assets.length}`,
+        filesDone: 0,
+        totalFiles: assets.length,
+      });
+
+      for (const asset of assets) {
+        const patient = this.database.getPatient(asset.patientId);
+        const base = {
+          assetId: asset.id,
+          patientId: asset.patientId,
+          patientName: patient ? `${patient.priimek || ''} ${patient.ime || ''}`.trim() : 'Pacient ne obstaja',
+          patientIndex: patient?.maticniIndeks || '',
+          kind: asset.kind,
+          displayName: asset.displayName,
+          storedPath: asset.storedPath,
+        };
+
+        if (!patient) {
+          issues.push({ ...base, issue: 'missing_patient', message: 'Dokument je vezan na pacienta, ki ga ni več v evidenci.' });
+        } else {
+          const stat = await fs.promises.stat(asset.storedPath).catch(() => null);
+          if (!stat) {
+            issues.push({ ...base, issue: 'missing', message: 'Datoteka ali mapa na disku ne obstaja.' });
+          } else if (asset.kind === 'dicom') {
+            if (!stat.isDirectory()) {
+              issues.push({ ...base, issue: 'wrong_type', message: 'DICOM pot ni mapa.' });
+            } else {
+              try {
+                const scanned = await scanDirectory(asset.storedPath);
+                if (!scanned.files.length) {
+                  issues.push({ ...base, issue: 'empty', message: 'DICOM mapa je prazna.' });
+                } else if (Number(asset.fileCount || 0) !== scanned.files.length || Number(asset.totalBytes || 0) !== scanned.totalBytes) {
+                  issues.push({
+                    ...base,
+                    issue: 'mismatch',
+                    message: `DICOM se ne ujema z zapisom (${scanned.files.length}/${asset.fileCount} datotek; ${scanned.totalBytes}/${asset.totalBytes} bajtov).`,
+                    actualFileCount: scanned.files.length,
+                    actualBytes: scanned.totalBytes,
+                  });
+                }
+              } catch (error) {
+                issues.push({ ...base, issue: 'unreadable', message: `DICOM mape ni mogoče prebrati: ${error.message}` });
+              }
+            }
+          } else if (asset.kind === 'mr_pdf') {
+            if (!stat.isFile()) {
+              issues.push({ ...base, issue: 'wrong_type', message: 'MR izvid ni datoteka.' });
+            } else {
+              let header = '';
+              try { header = await readPdfHeader(asset.storedPath); } catch {}
+              if (header !== '%PDF-') {
+                issues.push({ ...base, issue: 'invalid_pdf', message: 'Datoteka nima veljavne PDF glave.' });
+              } else if (Number(stat.size || 0) !== Number(asset.totalBytes || 0)) {
+                issues.push({
+                  ...base,
+                  issue: 'mismatch',
+                  message: `Velikost PDF-ja se ne ujema z zapisom (${stat.size}/${asset.totalBytes} bajtov).`,
+                  actualBytes: Number(stat.size || 0),
+                });
+              }
+            }
+          }
+        }
+
+        checked += 1;
+        this.emit(operationId, {
+          kind: 'health_check',
+          phase: 'scanning',
+          message: `Preverjam dokumente: ${checked} / ${assets.length}`,
+          filesDone: checked,
+          totalFiles: assets.length,
+        });
+      }
+
+      const result = {
+        operationId,
+        checkedAt: new Date().toISOString(),
+        assetCount: assets.length,
+        healthyCount: Math.max(0, assets.length - issues.length),
+        issueCount: issues.length,
+        issues,
+        healthy: issues.length === 0,
+      };
+      this.emit(operationId, {
+        kind: 'health_check',
+        phase: 'done',
+        message: issues.length ? `Preverjanje končano: ${issues.length} težav.` : 'Vsi dokumenti so dosegljivi in se ujemajo z evidenco.',
+        filesDone: assets.length,
+        totalFiles: assets.length,
+        ...result,
+      });
+      return result;
+    } catch (error) {
+      this.emit(operationId, { kind: 'health_check', phase: 'error', message: error.message });
+      this.log('Preverjanje dokumentov ni uspelo.', error);
+      throw error;
+    } finally {
+      this.healthScanActive = false;
     }
   }
 

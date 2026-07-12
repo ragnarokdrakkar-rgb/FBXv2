@@ -99,6 +99,68 @@ function registerIpc() {
     isPackaged: app.isPackaged,
   }));
 
+  ipcMain.handle('health:database', async () => database.runHealthCheck());
+  ipcMain.handle('patients:get-history', async (_event, payload = {}) => database.getPatientHistory(
+    String(payload.patientId || ''),
+    Number(payload.limit || 100),
+  ));
+  ipcMain.handle('preparation:get-day', async (_event, appointmentDate) => {
+    const date = String(appointmentDate || '');
+    const preparation = exportManager.prepare(date);
+    const lastExport = exportManager.getHistory(100).find((item) => item.appointmentDate === date) || null;
+    return { ...preparation, lastExport };
+  });
+  ipcMain.handle('health:export-diagnostics', async () => {
+    const databaseHealth = database.runHealthCheck();
+    const documentStatus = await documentManager.getStatus();
+    const cloudStatus = cloudManager?.getStatus?.() || {};
+    const updateStatus = updateManager?.getStatus?.() || {};
+    const report = {
+      format: 'FBX-DIAGNOSTICS-V1',
+      generatedAt: new Date().toISOString(),
+      appVersion: app.getVersion(),
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.versions.node,
+      electronVersion: process.versions.electron,
+      database: databaseHealth,
+      documents: {
+        exists: documentStatus.exists,
+        writable: documentStatus.writable,
+        error: documentStatus.error || '',
+        freeBytes: documentStatus.freeBytes,
+        assetCount: documentStatus.assetCount,
+        currentAssetCount: documentStatus.currentAssetCount,
+        totalAssetBytes: documentStatus.totalAssetBytes,
+      },
+      cloud: {
+        endpointConfigured: !!cloudStatus.endpointConfigured,
+        connectionVerified: !!cloudStatus.connectionVerified,
+        backupConfigured: !!cloudStatus.backupConfigured,
+        lastSyncAt: cloudStatus.lastSyncAt || '',
+        lastSyncRevision: cloudStatus.lastSyncRevision || 0,
+        pending: !!cloudStatus.pending,
+      },
+      updates: {
+        status: updateStatus.status || '',
+        currentVersion: updateStatus.currentVersion || app.getVersion(),
+        availableVersion: updateStatus.availableVersion || '',
+        lastCheckedAt: updateStatus.lastCheckedAt || '',
+        error: updateStatus.error || '',
+      },
+    };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Izvozi diagnostiko brez osebnih podatkov',
+      defaultPath: path.join(app.getPath('documents'), `fuzijska-diagnostika-${new Date().toISOString().slice(0, 10)}.json`),
+      filters: [{ name: 'JSON diagnostika', extensions: ['json'] }],
+      properties: ['createDirectory', 'showOverwriteConfirmation'],
+    });
+    if (result.canceled || !result.filePath) return { canceled: true };
+    await fs.promises.writeFile(result.filePath, JSON.stringify(report, null, 2), 'utf8');
+    return { canceled: false, filePath: result.filePath };
+  });
+
   ipcMain.handle('desktop:open-data-folder', async () => {
     const error = await shell.openPath(dataDirectory);
     if (error) throw new Error(error);
@@ -144,6 +206,7 @@ function registerIpc() {
   syncHandler('documents:get-summary', () => documentManager.getSummary());
 
   ipcMain.handle('documents:get-status', async () => documentManager.getStatus());
+  ipcMain.handle('documents:verify-all', async () => documentManager.verifyAllDocuments());
   ipcMain.handle('documents:choose-root', async () => {
     const current = await documentManager.getStatus();
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -313,7 +376,9 @@ if (!hasSingleInstanceLock) {
         defaultRoot: path.join(app.getPath('documents'), 'FuzijskaBiopsijaDokumenti'),
         log,
         onProgress: (progress) => {
-          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('documents:progress', progress);
+          if (!mainWindow || mainWindow.isDestroyed()) return;
+          const channel = progress?.kind === 'health_check' ? 'health:documents-progress' : 'documents:progress';
+          mainWindow.webContents.send(channel, progress);
         },
       });
       exportManager = new ExportManager({

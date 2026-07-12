@@ -1,0 +1,28 @@
+FAZA 6 PATCH – VERZIJA 1.5.0
+============================
+
+Ta paket kopiraj CEZ svojo obstojeco Git projektno mapo FBXv2.
+Ne brisi .git mape in ne ustvarjaj novega repozitorija.
+
+1. Zapri aplikacijo, VS Code in terminale v projektni mapi.
+2. Vsebino te mape kopiraj v obstojeco projektno mapo.
+3. Dovoli zamenjavo obstojecih datotek.
+4. V CMD v projektni mapi zazeni:
+
+   1-namesti.bat
+   npm test
+   git status
+
+5. Preveri, da package.json kaze 1.5.0.
+6. Commit in release:
+
+   git add .
+   git commit -m "Faza 6 - priprava dneva in preverjanje zdravja"
+   git push origin main
+   git tag v1.5.0
+   git push origin v1.5.0
+
+7. V GitHub Releaseu morajo nastati Setup.exe, blockmap in latest.yml.
+8. Namescena 1.4.3 mora sama ponuditi posodobitev 1.5.0.
+
+Podatkovna baza, DICOM, PDF in Google povezava se s kopiranjem kode ne spreminjajo.

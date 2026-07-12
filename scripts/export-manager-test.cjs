@@ -127,8 +127,10 @@ const { ExportManager } = require('../src/main/export-manager.cjs');
     assert.equal(history.filter((item) => item.status === 'completed').length, 2);
     assert.equal(history.filter((item) => item.status === 'cancelled').length, 1);
     assert.equal(history[0].appointmentDate, appointmentDate);
+    const patientHistory = db.getPatientHistory(patients[0].id);
+    assert.ok(patientHistory.some((item) => item.eventType === 'usb_export_completed'));
 
-    console.log('✓ Množični DICOM/PDF prenos, zaporedno poimenovanje in preklic so uspeli.');
+    console.log('✓ Množični DICOM/PDF prenos, zaporedno poimenovanje, zgodovina in preklic so uspeli.');
   } finally {
     db.close();
     fs.rmSync(temp, { recursive: true, force: true });
